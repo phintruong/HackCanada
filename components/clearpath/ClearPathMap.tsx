@@ -39,6 +39,7 @@ export default function ClearPathMap({
   const proposedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const recommendedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const prevCityIdRef = useRef(cityId);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;

@@ -22,6 +22,7 @@ export default function LandmarksLayer({ map, cityId }: LandmarksLayerProps) {
     if (!beforeLayerId) return;
 
     async function addLayer() {
+      if (!map) return;
       try {
         const res = await fetch(`/map-data/landmarks-${cityId}.geojson`);
         if (!res.ok) {
