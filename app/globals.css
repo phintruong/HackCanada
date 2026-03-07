@@ -87,7 +87,7 @@ body {
     font-style: italic;
     font-weight: 400;
     font-size: clamp(3rem, 7vw, 5.5rem);
-    color: #0f172a;
+    color: #0369a1;
     letter-spacing: -0.02em;
     line-height: 1;
     text-shadow: 0 1px 20px rgba(255, 255, 255, 0.8);

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import ClearPathMap from '@/components/clearpath/ClearPathMap';
 import ModeToggle from '@/components/clearpath/ModeToggle';
 import CitySelector from '@/components/clearpath/CitySelector';
@@ -109,6 +110,14 @@ export default function MapPage() {
         trafficDragging={isTimelineDragging}
       />
       <div className='absolute top-0 left-0 w-md z-10 flex flex-col gap-3 p-4 max-h-screen overflow-y-auto'>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-700 hover:text-sky-800 text-left rounded-full px-3 py-2 -ml-1 hover:bg-white/80 transition-colors"
+          aria-label="Back to home"
+        >
+          <span aria-hidden>←</span>
+          Back
+        </Link>
         <ModeToggle mode={mode} onChange={setMode} />
         <CitySelector
           cities={CITIES}

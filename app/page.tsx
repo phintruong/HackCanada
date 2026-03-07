@@ -46,19 +46,21 @@ export default function Landing() {
   return (
     <div className="lp">
       {/* Top buttons */}
-      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center gap-4 pt-5">
-        <Link
-          href="/map"
-          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-sky-700 bg-white/95 hover:bg-sky-50 border border-sky-200 rounded-full shadow-md hover:shadow-lg transition-all"
-        >
-          Explore
-        </Link>
-        <Link
-          href="/editor"
-          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-sky-500 hover:bg-sky-600 rounded-full shadow-md hover:shadow-lg transition-all"
-        >
-          Build
-        </Link>
+      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pt-5">
+        <div className="inline-flex gap-1.5 rounded-full border border-sky-200/80 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
+          <Link
+            href="/map"
+            className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-sky-700 bg-white hover:bg-sky-50 border border-sky-200 rounded-full shadow-md hover:shadow-lg transition-all"
+          >
+            Explore
+          </Link>
+          <Link
+            href="/editor"
+            className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-sky-500 hover:bg-sky-600 rounded-full shadow-md hover:shadow-lg transition-all"
+          >
+            Build
+          </Link>
+        </div>
       </div>
 
       {/* Spacer so content reaches viewport when overlay is full (progress 0.5) */}
