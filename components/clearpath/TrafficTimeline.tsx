@@ -137,7 +137,7 @@ export default function TrafficTimeline({
     : segColors[0]?.color ?? '#22c55e';
 
   return (
-    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-32rem)] min-w-[320px] max-w-[700px]">
+    <div className="absolute bottom-6 right-6 z-20 w-[min(420px,calc(100vw-2rem))] min-w-[320px]">
       {/* Reroute alert cards — stack above the timeline */}
       {alerts.length > 0 && (
         <div className="mb-2 space-y-2">
