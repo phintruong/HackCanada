@@ -4,11 +4,13 @@ import { useState, useCallback, useEffect } from 'react';
 import VitalsCapture from './VitalsCapture';
 import SymptomCards from './SymptomCards';
 import RoutingResult from './RoutingResult';
-import { VitalsPayload, SymptomsPayload } from '@/lib/clearpath/types';
+import type { VitalsPayload, SymptomsPayload, TriageResponse, RouteResponse, ScoredHospital } from '@/lib/clearpath/types';
+
+const API_TIMEOUT_MS = 10_000;
 
 interface CivilianPanelProps {
-  onRecommendation: (result: any, routeParams?: any) => void;
-  currentRecommendation?: any;
+  onRecommendation: (result: RouteResponse | null, routeParams?: Record<string, unknown>) => void;
+  currentRecommendation?: RouteResponse & { activeRoute?: ScoredHospital } | null;
 }
 
 type Step = 'address' | 'vitals' | 'symptoms' | 'loading' | 'result';
@@ -20,8 +22,8 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
   const [locating, setLocating] = useState(false);
   const [vitals, setVitals] = useState<VitalsPayload | null>(null);
   const [symptoms, setSymptoms] = useState<SymptomsPayload | null>(null);
-  const [triageResult, setTriageResult] = useState<any>(null);
-  const [routeResult, setRouteResult] = useState<any>(null);
+  const [triageResult, setTriageResult] = useState<TriageResponse | null>(null);
+  const [routeResult, setRouteResult] = useState<RouteResponse | null>(null);
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,15 +34,12 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
       // If an activeRoute is set (from Show Route), use its hospital ID
       const activeRoute = currentRecommendation.activeRoute;
       if (activeRoute) {
-        setActiveRouteId(
-          activeRoute.hospital?.id ?? (activeRoute.hospital as any)?._id ?? null
-        );
+        const h = activeRoute.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
       } else {
-        setActiveRouteId(
-          currentRecommendation.recommended?.hospital?.id ??
-          (currentRecommendation.recommended?.hospital as any)?._id ??
-          null
-        );
+        const rec = currentRecommendation.recommended as ScoredHospital | undefined;
+        const h = rec?.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
       }
     }
   }, [currentRecommendation, routeResult]);
@@ -76,7 +75,7 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
             const res = await fetch(url);
             if (!res.ok) return;
 
-            const data: any = await res.json();
+            const data = (await res.json()) as { features?: Array<{ text?: string; properties?: { postalcode?: string }; place_name?: string }> };
             const feature = data.features?.[0];
             const code =
               feature?.text ||
@@ -117,10 +116,18 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
       setStep('loading');
       setError(null);
 
-      const effectiveVitals = vitals ?? { heartRate: 75, respiratoryRate: 16, stressIndex: 0.3 };
+      const effectiveVitals: VitalsPayload = vitals ?? { heartRate: 75, respiratoryRate: 16, stressIndex: 0.3 };
+
+      const routeBody: Record<string, unknown> = {
+        severity: undefined as TriageResponse['severity'] | undefined,
+        city: 'toronto',
+        symptoms: sym,
+      };
 
       try {
-        // Step 1: AI Triage
+        const triageController = new AbortController();
+        const triageTimeout = setTimeout(() => triageController.abort(), API_TIMEOUT_MS);
+
         const triageRes = await fetch('/api/clearpath/triage', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -129,23 +136,42 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
             symptoms: sym,
             city: 'toronto',
           }),
+          signal: triageController.signal,
         });
 
+        clearTimeout(triageTimeout);
+
         if (!triageRes.ok) {
-          setError('Triage analysis failed. Please try again.');
+          let message = 'Unable to analyze symptoms right now. Please try again.';
+          try {
+            const errBody = (await triageRes.json()) as { error?: string };
+            if (errBody?.error) message = errBody.error;
+          } catch {
+            // use default message
+          }
+          setError(message);
           setStep('symptoms');
           return;
         }
 
-        const triage = await triageRes.json();
-        setTriageResult(triage);
+        let triage: TriageResponse;
+        try {
+          const json = await triageRes.json();
+          if (json && typeof json.severity === 'string' && typeof json.reasoning === 'string') {
+            triage = { severity: json.severity, reasoning: json.reasoning };
+          } else {
+            setError('Unable to analyze symptoms right now. Please try again.');
+            setStep('symptoms');
+            return;
+          }
+        } catch {
+          setError('Unable to analyze symptoms right now. Please try again.');
+          setStep('symptoms');
+          return;
+        }
 
-        // Step 2: Smart routing with real location + symptoms
-        const routeBody: any = {
-          severity: triage.severity,
-          city: 'toronto',
-          symptoms: sym,
-        };
+        setTriageResult(triage);
+        routeBody.severity = triage.severity;
 
         if (userCoords) {
           routeBody.userLat = userCoords.lat;
@@ -153,30 +179,63 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
         } else if (postalCode.trim()) {
           routeBody.postalCode = postalCode.trim();
         } else {
-          // Fallback to downtown Toronto
           routeBody.userLat = 43.6532;
           routeBody.userLng = -79.3832;
         }
+
+        const routeController = new AbortController();
+        const routeTimeout = setTimeout(() => routeController.abort(), API_TIMEOUT_MS);
 
         const routeRes = await fetch('/api/clearpath/route', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(routeBody),
+          signal: routeController.signal,
         });
 
+        clearTimeout(routeTimeout);
+
         if (!routeRes.ok) {
+          let message = 'No hospitals found nearby. Please try again.';
+          try {
+            const errBody = (await routeRes.json()) as { error?: string };
+            if (errBody?.error) message = errBody.error;
+          } catch {
+            // use default
+          }
+          setError(message);
+          setStep('symptoms');
+          return;
+        }
+
+        let route: RouteResponse;
+        try {
+          const json = await routeRes.json();
+          if (json?.recommended && Array.isArray(json?.alternatives) && json?.userLocation) {
+            route = json as RouteResponse;
+          } else {
+            setError('No hospitals found nearby. Please try again.');
+            setStep('symptoms');
+            return;
+          }
+        } catch {
           setError('No hospitals found nearby. Please try again.');
           setStep('symptoms');
           return;
         }
 
-        const route = await routeRes.json();
         setRouteResult(route);
-        setActiveRouteId(route.recommended?.hospital?.id ?? (route.recommended?.hospital as any)?._id ?? null);
+        const rec = route.recommended;
+        const h = rec?.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
         onRecommendation(route, routeBody);
         setStep('result');
       } catch (err) {
-        setError('Failed to complete triage. Please try again.');
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError('Request took too long. Please try again.');
+        } else {
+          setError('Unable to analyze symptoms right now. Please try again.');
+        }
         setStep('symptoms');
         console.error(err);
       }
@@ -197,18 +256,17 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
   };
 
   const handleShowRoute = useCallback(
-    (scored: import('@/lib/clearpath/types').ScoredHospital) => {
+    (scored: ScoredHospital) => {
       if (!routeResult) return;
-      const hId = scored.hospital?.id ?? (scored.hospital as any)?._id ?? null;
-      // If this route is already showing, do nothing
+      const h = scored.hospital as { id?: string; _id?: string };
+      const hId = h?.id ?? h?._id ?? null;
       if (hId && hId === activeRouteId) return;
       setActiveRouteId(hId);
-      // Don't swap card positions — just tell the map which route to display
       const updated = {
         ...routeResult,
         activeRoute: scored,
       };
-      onRecommendation(updated);
+      onRecommendation(updated, undefined);
     },
     [routeResult, activeRouteId, onRecommendation]
   );
