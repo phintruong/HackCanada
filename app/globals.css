@@ -4,6 +4,8 @@ body {
   font-family: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background: #f8fafc;
+  color: #1e293b;
 }
 
 *::-webkit-scrollbar {
@@ -21,8 +23,8 @@ body {
   }
   .lp {
     min-height: 100vh;
-    background: #0f172a;
-    color: #f1f5f9;
+    background: #f0f9ff;
+    color: #1e293b;
   }
 
   .lp-hero-wrap {
@@ -68,11 +70,11 @@ body {
     inset: 0;
     pointer-events: none;
     background:
-      linear-gradient(to top, rgba(0, 0, 0, 0.45) 0%, transparent 40%),
+      linear-gradient(to top, rgba(0, 0, 0, 0.2) 0%, transparent 50%),
       radial-gradient(
         ellipse 80% 80% at 50% 50%,
-        transparent 40%,
-        rgba(0, 0, 0, 0.25) 100%
+        transparent 50%,
+        rgba(0, 0, 0, 0.08) 100%
       );
   }
 
@@ -85,10 +87,10 @@ body {
     font-style: italic;
     font-weight: 400;
     font-size: clamp(3rem, 7vw, 5.5rem);
-    color: #faf5eb;
+    color: #0f172a;
     letter-spacing: -0.02em;
     line-height: 1;
-    text-shadow: 0 2px 30px rgba(0, 0, 0, 0.4);
+    text-shadow: 0 1px 20px rgba(255, 255, 255, 0.8);
     margin: 0;
   }
 
@@ -102,21 +104,23 @@ body {
     font-size: 0.95rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #faf5eb;
+    color: #fff;
     text-decoration: none;
-    background: rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
     backdrop-filter: blur(12px);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(14, 165, 233, 0.4);
     border-radius: 50px;
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.35);
     transition:
       background 0.25s,
-      transform 0.2s;
-    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.3);
+      transform 0.2s,
+      box-shadow 0.2s;
   }
 
   .lp-hero-cta:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: linear-gradient(135deg, #38bdf8 0%, #0ea5e9 100%);
     transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(14, 165, 233, 0.4);
   }
 
   .lp-content-sticky {
@@ -150,7 +154,7 @@ body {
     font-size: 0.78rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: #64748b;
     margin: 0 0 3.5rem;
   }
 
@@ -169,7 +173,7 @@ body {
     font-size: clamp(1.5rem, 3vw, 2.1rem);
     font-weight: 400;
     line-height: 1.5;
-    color: #f1f5f9;
+    color: #1e293b;
     margin: 0 0 3rem;
     letter-spacing: -0.01em;
   }
@@ -180,7 +184,7 @@ body {
     font-size: 0.82rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: #64748b;
     margin: 0 0 3.5rem;
   }
 
@@ -192,7 +196,7 @@ body {
     font-weight: 400;
     line-height: 1;
     letter-spacing: -0.01em;
-    color: #dc2626;
+    color: #0ea5e9;
     animation: goldShimmer 6s ease-in-out infinite;
   }
 
@@ -207,13 +211,11 @@ body {
     font-size: 0.92rem;
     letter-spacing: 0.06em;
     color: #fff;
-    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-    border: 1px solid rgba(220, 38, 38, 0.3);
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    border: 1px solid rgba(14, 165, 233, 0.3);
     border-radius: 50px;
     text-decoration: none;
-    box-shadow:
-      0 2px 12px rgba(220, 38, 38, 0.2),
-      0 0 0 0 rgba(220, 38, 38, 0);
+    box-shadow: 0 4px 20px rgba(14, 165, 233, 0.3);
     transition:
       transform 0.25s ease,
       box-shadow 0.3s ease,
@@ -222,7 +224,7 @@ body {
 
   .lp-stmt-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 28px rgba(220, 38, 38, 0.35);
+    box-shadow: 0 8px 28px rgba(14, 165, 233, 0.4);
   }
 
   /* fade-in / slide-up animation */
@@ -238,7 +240,7 @@ body {
     font-size: clamp(1.5rem, 3vw, 2.1rem);
     font-weight: 400;
     line-height: 1.5;
-    color: #f1f5f9;
+    color: #1e293b;
     margin: 0;
     letter-spacing: -0.01em;
   }
@@ -254,14 +256,14 @@ body {
 
   .lp-detail {
     padding: 2.5rem 2rem;
-    border-top: 1px solid #334155;
+    border-top: 1px solid #e2e8f0;
   }
 
   .lp-detail-num {
     font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-size: 0.85rem;
-    color: #94a3b8;
+    color: #64748b;
     display: block;
     margin-bottom: 1rem;
   }
@@ -277,7 +279,7 @@ body {
   .lp-detail p {
     font-size: 0.92rem;
     line-height: 1.7;
-    color: #94a3b8;
+    color: #64748b;
     margin: 0;
   }
 
@@ -287,26 +289,26 @@ body {
     font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-size: 0.88rem;
-    color: #cbd5e1;
+    color: #475569;
     text-decoration: none;
     transition: color 0.2s;
   }
 
   .lp-detail-link:hover {
-    color: #dc2626;
+    color: #0ea5e9;
   }
 
   .lp-closing {
     text-align: center;
     padding: 5rem 2rem;
-    border-top: 1px solid #334155;
+    border-top: 1px solid #e2e8f0;
   }
 
   .lp-closing-text {
     font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-size: 1rem;
-    color: #94a3b8;
+    color: #64748b;
     margin: 0 0 2rem;
     letter-spacing: 0.04em;
   }
@@ -324,7 +326,7 @@ body {
     padding: 0.8rem 2rem;
     font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 0.9rem;
-    background: #dc2626;
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
     color: #fff;
     border-radius: 50px;
     text-decoration: none;
@@ -336,7 +338,7 @@ body {
 
   .lp-btn-warm:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(220, 38, 38, 0.35);
+    box-shadow: 0 6px 24px rgba(14, 165, 233, 0.4);
   }
 
   .lp-btn-outline {
@@ -346,8 +348,8 @@ body {
     font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 0.9rem;
     background: transparent;
-    color: #cbd5e1;
-    border: 1px solid #475569;
+    color: #475569;
+    border: 1px solid #cbd5e1;
     border-radius: 50px;
     text-decoration: none;
     letter-spacing: 0.02em;
@@ -357,27 +359,27 @@ body {
   }
 
   .lp-btn-outline:hover {
-    border-color: #94a3b8;
-    color: #f1f5f9;
+    border-color: #0ea5e9;
+    color: #0284c7;
   }
 
   .lp-footer {
     text-align: center;
     padding: 2.5rem 2rem;
-    border-top: 1px solid #334155;
+    border-top: 1px solid #e2e8f0;
   }
 
   .lp-footer a {
     font-size: 0.78rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #94a3b8;
+    color: #64748b;
     text-decoration: none;
     transition: color 0.2s;
   }
 
   .lp-footer a:hover {
-    color: #f87171;
+    color: #0ea5e9;
   }
 
   /* Map 3D page (hero-style consistency) */

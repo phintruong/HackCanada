@@ -58,9 +58,9 @@ export default function GovernmentSidebar({ onSimulationResult }: GovernmentSide
   }, [proposedLocation, capacity, city, onSimulationResult]);
 
   return (
-    <div className="h-full bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.65)] border border-white/20 rounded-3xl p-5 overflow-y-auto">
+    <div className="h-full bg-white/95 backdrop-blur-xl shadow-xl border border-sky-100 rounded-3xl p-5 overflow-y-auto">
       <div className="mb-6">
-        <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">
+        <h2 className="text-lg font-black text-sky-800 uppercase tracking-tight">
           Government Mode
         </h2>
         <p className="text-xs text-slate-500 mt-1">
@@ -97,7 +97,7 @@ export default function GovernmentSidebar({ onSimulationResult }: GovernmentSide
             disabled={!proposedLocation || loading}
             className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${
               proposedLocation && !loading
-                ? 'bg-blue-700 hover:bg-blue-800 text-white shadow-md'
+                ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-md'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >

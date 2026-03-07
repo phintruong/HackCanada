@@ -49,13 +49,13 @@ export default function Landing() {
       <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center gap-4 pt-5">
         <Link
           href="/map"
-          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-600 rounded-full shadow-sm hover:shadow transition-all"
+          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-sky-700 bg-white/95 hover:bg-sky-50 border border-sky-200 rounded-full shadow-md hover:shadow-lg transition-all"
         >
           Explore
         </Link>
         <Link
           href="/editor"
-          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-[#dc2626] hover:bg-[#b91c1c] rounded-full shadow-sm hover:shadow transition-all"
+          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-sky-500 hover:bg-sky-600 rounded-full shadow-md hover:shadow-lg transition-all"
         >
           Build
         </Link>
@@ -84,7 +84,7 @@ export default function Landing() {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: '#1e293b',
+              backgroundColor: '#f0f9ff',
               opacity: overlayOpacity,
               zIndex: 10,
               pointerEvents: 'none',
@@ -102,7 +102,7 @@ export default function Landing() {
           position: 'sticky',
           top: 0,
           zIndex: 20,
-          backgroundColor: '#1e293b',
+          backgroundColor: '#f0f9ff',
           paddingRight: '1.5rem',
         }}
       >
@@ -137,7 +137,7 @@ export default function Landing() {
         </section>
 
         {/* ───── YOUR JOURNEY ───── */}
-<section className="bg-[#334155]" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+<section className="bg-sky-50" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
   <FeatureSteps
     title="How ClearPath Works"
     subtitle="Reducing ER congestion with data, simulation, and smart routing."

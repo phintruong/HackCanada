@@ -125,9 +125,9 @@ export default function CongestionLayer({ map, hospitals, congestion }: Congesti
         'text-font': ['DIN Pro Medium', 'Arial Unicode MS Regular']
       },
       paint: {
-        'text-color': '#e2e8f0',
-        'text-halo-color': '#0f172a',
-        'text-halo-width': 1.5
+        'text-color': '#1e293b',
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 2
       }
     });
 
@@ -146,8 +146,8 @@ export default function CongestionLayer({ map, hospitals, congestion }: Congesti
           `<span style="
               display:inline-block; padding:2px 8px; margin:2px 3px 2px 0;
               border-radius:9999px; font-size:10px; font-weight:600;
-              background:rgba(255,255,255,0.08); color:#94a3b8;
-              border:1px solid rgba(255,255,255,0.1);
+              background:#f0f9ff; color:#475569;
+              border:1px solid #e2e8f0;
             ">${s}</span>`
         ).join('')
         : '';
@@ -156,23 +156,23 @@ export default function CongestionLayer({ map, hospitals, congestion }: Congesti
         <div style="
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
           min-width: 240px; max-width: 300px;
-          background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+          background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
           border-radius: 12px; padding: 16px;
-          color: #e2e8f0; border: 1px solid rgba(255,255,255,0.1);
-          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+          color: #1e293b; border: 1px solid #e2e8f0;
+          box-shadow: 0 20px 40px rgba(14,165,233,0.12);
         ">
-          <div style="font-size:15px; font-weight:700; margin-bottom:10px; color:#f8fafc;">
+          <div style="font-size:15px; font-weight:700; margin-bottom:10px; color:#0f172a;">
             ${props.name}
           </div>
 
           <div style="margin-bottom:10px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
-              <span style="font-size:11px; color:#94a3b8;">Occupancy</span>
-              <span style="font-size:11px; font-weight:700; color:${color};">${pct}% - ${label}</span>
+              <span style="font-size:11px; color:#64748b;">Occupancy</span>
+              <span style="font-size:11px; font-weight:700; color:${color};">${pct}% — ${label}</span>
             </div>
             <div style="
               width:100%; height:6px; border-radius:3px;
-              background:rgba(255,255,255,0.08); overflow:hidden;
+              background:#e2e8f0; overflow:hidden;
             ">
               <div style="
                 width:${pct}%; height:100%; border-radius:3px;
@@ -183,17 +183,17 @@ export default function CongestionLayer({ map, hospitals, congestion }: Congesti
 
           <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px;">
             <div style="
-              background:rgba(255,255,255,0.05); border-radius:8px; padding:8px;
-              text-align:center; border:1px solid rgba(255,255,255,0.06);
+              background:#f0f9ff; border-radius:8px; padding:8px;
+              text-align:center; border:1px solid #e2e8f0;
             ">
-              <div style="font-size:18px; font-weight:800; color:#f8fafc;">${props.erBeds}</div>
+              <div style="font-size:18px; font-weight:800; color:#0f172a;">${props.erBeds}</div>
               <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">ER Beds</div>
             </div>
             <div style="
-              background:rgba(255,255,255,0.05); border-radius:8px; padding:8px;
-              text-align:center; border:1px solid rgba(255,255,255,0.06);
+              background:#f0f9ff; border-radius:8px; padding:8px;
+              text-align:center; border:1px solid #e2e8f0;
             ">
-              <div style="font-size:18px; font-weight:800; color:#f8fafc;">${props.totalBeds}</div>
+              <div style="font-size:18px; font-weight:800; color:#0f172a;">${props.totalBeds}</div>
               <div style="font-size:10px; color:#64748b; text-transform:uppercase; letter-spacing:0.5px;">Total Beds</div>
             </div>
           </div>

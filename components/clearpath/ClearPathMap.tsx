@@ -242,11 +242,11 @@ export default function ClearPathMap({
         .addTo(map);
     }
 
-    // Draw traffic-colored route with animated dashes
+    // Draw traffic-colored route with animated dashes (civilian only; hide in government mode)
     const routeGeometry = rec.routeGeometry;
     const congestionSegs = rec.congestionSegments as string[] | undefined;
 
-    if (routeGeometry && map.isStyleLoaded()) {
+    if (routeGeometry && map.isStyleLoaded() && mode !== 'government') {
       // Background: subtle dark line for depth
       map.addSource('driving-route', {
         type: 'geojson',
@@ -320,8 +320,8 @@ export default function ClearPathMap({
       trafficAnimRef.current = requestAnimationFrame(animateDash);
     }
 
-    // Draw alternative routes as dashed lines
-    const alts = recommendedHospital.alternatives ?? [];
+    // Draw alternative routes as dashed lines (civilian only)
+    const alts = mode === 'government' ? [] : (recommendedHospital.alternatives ?? []);
     alts.forEach((alt: any, i: number) => {
       if (alt.routeGeometry && map.isStyleLoaded()) {
         map.addSource(`alt-route-${i}`, {
@@ -353,7 +353,7 @@ export default function ClearPathMap({
     } else {
       map.flyTo({ center: [h.longitude, h.latitude], zoom: 13, speed: 1.2 });
     }
-  }, [recommendedHospital]);
+  }, [recommendedHospital, mode]);
 
   // Update route progress + traffic colors when the timeline slider moves
   useEffect(() => {

@@ -35,8 +35,8 @@ const TRIGGER_ICONS: Record<RerouteAlert['trigger'], string> = {
 };
 
 const TRIGGER_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  warning: { bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-300' },
-  critical: { bg: 'bg-red-500/15', border: 'border-red-500/30', text: 'text-red-300' },
+  warning: { bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-800' },
+  critical: { bg: 'bg-red-50', border: 'border-red-300', text: 'text-red-800' },
 };
 
 export default function TrafficTimeline({
@@ -146,7 +146,7 @@ export default function TrafficTimeline({
             return (
               <div
                 key={alert.id}
-                className={`${colors.bg} ${colors.border} border backdrop-blur-xl rounded-xl px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2`}
+                className={`${colors.bg} ${colors.border} border backdrop-blur-xl rounded-xl px-4 py-3 shadow-lg animate-in slide-in-from-bottom-2`}
               >
                 <div className="flex items-start gap-3">
                   <span className="text-lg leading-none mt-0.5">{TRIGGER_ICONS[alert.trigger]}</span>
@@ -154,7 +154,7 @@ export default function TrafficTimeline({
                     <p className={`text-[11px] font-bold ${colors.text} uppercase tracking-wider`}>
                       {alert.title}
                     </p>
-                    <p className="text-[10px] text-slate-300 leading-relaxed mt-1">
+                    <p className="text-[10px] text-slate-600 leading-relaxed mt-1">
                       {alert.description}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
@@ -171,7 +171,7 @@ export default function TrafficTimeline({
                       </button>
                       <button
                         onClick={() => handleDismiss(alert.id)}
-                        className="px-2 py-1 text-[10px] text-slate-400 hover:text-slate-200 transition-colors"
+                        className="px-2 py-1 text-[10px] text-slate-500 hover:text-slate-700 transition-colors"
                       >
                         Dismiss
                       </button>
@@ -184,16 +184,16 @@ export default function TrafficTimeline({
         </div>
       )}
 
-      <div className="bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
+      <div className="bg-white/95 backdrop-blur-xl border border-sky-200 rounded-2xl px-5 py-4 shadow-xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            <span className="text-[11px] font-semibold text-slate-200 uppercase tracking-wider">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
               Traffic Prediction
             </span>
           </div>
-          <span className="text-[12px] font-bold text-white">
+          <span className="text-[12px] font-bold text-slate-800">
             {current.label}
           </span>
         </div>
@@ -213,7 +213,7 @@ export default function TrafficTimeline({
           onPointerUp={handlePointerUp}
         >
           {/* Track background */}
-          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1.5 rounded-full bg-slate-700" />
+          <div className="absolute top-1/2 -translate-y-1/2 left-0 right-0 h-1.5 rounded-full bg-sky-200" />
 
           {/* Tick marks */}
           {predictions.map((p, i) => {
@@ -225,7 +225,7 @@ export default function TrafficTimeline({
                 style={{
                   left: `${pct}%`,
                   backgroundColor:
-                    i <= activeStep ? '#e2e8f0' : '#475569',
+                    i <= activeStep ? '#0ea5e9' : '#bae6fd',
                 }}
               />
             );
@@ -242,19 +242,19 @@ export default function TrafficTimeline({
 
           {/* Thumb */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white shadow-[0_0_12px_rgba(255,255,255,0.5)] border-2 border-slate-300 transition-left duration-150"
+            className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-5 h-5 rounded-full bg-white shadow-lg border-2 border-sky-400 transition-left duration-150"
             style={{ left: `${thumbPct}%` }}
           />
         </div>
 
         {/* Time labels */}
         <div className="flex justify-between mt-1.5">
-          <span className="text-[9px] text-slate-400">Now</span>
-          <span className="text-[9px] text-slate-400">{predictions[predictions.length - 1]?.label}</span>
+          <span className="text-[9px] text-slate-500">Now</span>
+          <span className="text-[9px] text-slate-500">{predictions[predictions.length - 1]?.label}</span>
         </div>
 
         {/* Stats row */}
-        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700/50">
+        <div className="flex items-center justify-between mt-3 pt-3 border-t border-sky-100">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <div
@@ -270,7 +270,7 @@ export default function TrafficTimeline({
                           : '#dc2626',
                 }}
               />
-              <span className="text-[10px] text-slate-300 font-medium">
+              <span className="text-[10px] text-slate-600 font-medium">
                 {current.avgCongestionLevel < 1.5
                   ? 'Clear'
                   : current.avgCongestionLevel < 2.5
@@ -280,7 +280,7 @@ export default function TrafficTimeline({
                       : 'Severe'}
               </span>
             </div>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-500">
               Drive time: {current.drivingTimeMultiplier > 1 ? '+' : ''}
               {Math.round((current.drivingTimeMultiplier - 1) * 100)}%
             </span>
@@ -289,7 +289,7 @@ export default function TrafficTimeline({
           {alerts.length > 0 && (
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-              <span className="text-[10px] text-amber-300 font-semibold">
+              <span className="text-[10px] text-amber-700 font-semibold">
                 {alerts.length} alert{alerts.length > 1 ? 's' : ''}
               </span>
             </div>
@@ -304,7 +304,7 @@ export default function TrafficTimeline({
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: CONGESTION_COLORS[level] }}
               />
-              <span className="text-[8px] text-slate-500 capitalize">{level}</span>
+              <span className="text-[8px] text-slate-600 capitalize">{level}</span>
             </div>
           ))}
         </div>

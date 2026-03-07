@@ -198,9 +198,9 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
   const canStart = postalCode.trim().length > 0 || userCoords !== null;
 
   return (
-    <div className="h-full bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.65)] border border-white/20 rounded-3xl p-5 overflow-y-auto">
+        <div className="h-full bg-white/95 backdrop-blur-xl shadow-xl border border-sky-100 rounded-3xl p-5 overflow-y-auto">
       <div className="mb-6">
-        <h2 className="text-lg font-black text-red-700 uppercase tracking-tight">
+        <h2 className="text-lg font-black text-sky-700 uppercase tracking-tight">
           ClearPath
         </h2>
         <p className="text-xs text-slate-500 mt-1">
@@ -225,7 +225,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
               value={postalCode}
               onChange={(e) => { setPostalCode(e.target.value); setUserCoords(null); }}
               placeholder="e.g. M5B 1W8"
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
             />
           </div>
 
@@ -262,7 +262,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
             disabled={!canStart}
             className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-colors ${
               canStart
-                ? 'bg-red-600 hover:bg-red-700 text-white'
+                ? 'bg-sky-500 hover:bg-sky-600 text-white'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
             }`}
           >
@@ -281,7 +281,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
 
       {step === 'loading' && (
         <div className="flex flex-col items-center justify-center py-16">
-          <div className="w-10 h-10 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mb-4" />
+          <div className="w-10 h-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mb-4" />
           <p className="text-sm font-bold text-slate-700">Analyzing your symptoms...</p>
           <p className="text-xs text-slate-400 mt-1">Computing optimal route with live traffic</p>
         </div>
@@ -306,7 +306,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
               key={s}
               className={`flex-1 h-1.5 rounded-full transition-colors ${
                 (['address', 'vitals', 'symptoms', 'loading', 'result'] as Step[]).indexOf(step) >= i
-                  ? 'bg-red-500'
+                  ? 'bg-sky-500'
                   : 'bg-slate-200'
               }`}
             />
