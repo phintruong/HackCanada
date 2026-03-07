@@ -68,7 +68,7 @@ export default function GovernmentSidebar({
   }, [proposedLocation, capacity, city, scenario, onSimulationResult]);
 
   return (
-    <div className="h-full bg-white/95 backdrop-blur-md shadow-2xl border-r border-slate-200 p-5 overflow-y-auto">
+    <div className="h-full bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.65)] border border-white/20 rounded-3xl p-5 overflow-y-auto">
       <div className="mb-6">
         <h2 className="text-lg font-black text-slate-900 uppercase tracking-tight">
           Government Mode
@@ -79,7 +79,7 @@ export default function GovernmentSidebar({
       </div>
 
       <div className="space-y-5">
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+        <div className="p-4 bg-slate-50/90 border border-slate-200/70 rounded-2xl space-y-3 shadow-sm">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
             Scenario
           </h3>
@@ -107,14 +107,14 @@ export default function GovernmentSidebar({
           )}
         </div>
 
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="p-4 bg-slate-50/90 border border-slate-200/70 rounded-2xl shadow-sm">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
             2. Set Capacity
           </h3>
           <CapacitySlider value={capacity} onChange={setCapacity} />
         </div>
 
-        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg">
+        <div className="p-4 bg-slate-50/90 border border-slate-200/70 rounded-2xl shadow-sm">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
             3. Run Simulation
           </h3>

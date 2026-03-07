@@ -15,8 +15,7 @@ const config: Config = {
       },
       fontFamily: {
         'mono': ['var(--font-ibm-plex-mono)', 'monospace'],
-        'sans': ['var(--font-archivo)', 'system-ui', 'sans-serif'],
-        'serif': ['var(--font-lora)', 'serif'],
+        'sans': ['var(--font-sans)', 'system-ui', 'sans-serif'],
       },
     },
   },

@@ -7,23 +7,25 @@ interface ModeToggleProps {
 
 export default function ModeToggle({ mode, onChange }: ModeToggleProps) {
   return (
-    <div className="flex rounded-lg overflow-hidden shadow-lg border border-white/20 backdrop-blur-md">
+    <div className="inline-flex items-center rounded-full bg-slate-900/80 p-1 shadow-[0_14px_40px_rgba(15,23,42,0.6)] border border-white/15 backdrop-blur-xl">
       <button
+        type="button"
         onClick={() => onChange('government')}
-        className={`px-4 py-2 text-sm font-bold uppercase tracking-wide transition-all ${
+        className={`flex-1 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-all ${
           mode === 'government'
-            ? 'bg-blue-700 text-white'
-            : 'bg-white/80 text-slate-600 hover:bg-white'
+            ? 'bg-blue-500 text-white shadow-[0_10px_30px_rgba(15,23,42,0.8)]'
+            : 'bg-transparent text-slate-200/80 hover:bg-slate-800/80 hover:text-white'
         }`}
       >
         Government
       </button>
       <button
+        type="button"
         onClick={() => onChange('civilian')}
-        className={`px-4 py-2 text-sm font-bold uppercase tracking-wide transition-all ${
+        className={`flex-1 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-all ${
           mode === 'civilian'
-            ? 'bg-red-600 text-white'
-            : 'bg-white/80 text-slate-600 hover:bg-white'
+            ? 'bg-red-500 text-white shadow-[0_10px_30px_rgba(15,23,42,0.8)]'
+            : 'bg-transparent text-slate-200/80 hover:bg-slate-800/80 hover:text-white'
         }`}
       >
         Civilian

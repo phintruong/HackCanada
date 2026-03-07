@@ -40,7 +40,7 @@ export default function ClearPathMap({
   const [congestion, setCongestion] = useState<any[]>([]);
   const proposedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const recommendedMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const prevCityIdRef = useRef(cityId);
+  const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -140,16 +140,44 @@ export default function ClearPathMap({
   }, [proposedLocation, onMapClick]);
 
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
 
+    // Clean up previous markers and route
     recommendedMarkerRef.current?.remove();
     recommendedMarkerRef.current = null;
+    userMarkerRef.current?.remove();
+    userMarkerRef.current = null;
+
+    if (map.getLayer('driving-route-line')) map.removeLayer('driving-route-line');
+    if (map.getSource('driving-route')) map.removeSource('driving-route');
+    if (map.getLayer('alt-route-line-0')) map.removeLayer('alt-route-line-0');
+    if (map.getSource('alt-route-0')) map.removeSource('alt-route-0');
+    if (map.getLayer('alt-route-line-1')) map.removeLayer('alt-route-line-1');
+    if (map.getSource('alt-route-1')) map.removeSource('alt-route-1');
 
     if (!recommendedHospital) return;
 
-    const h = recommendedHospital.hospital ?? recommendedHospital;
+    const rec = recommendedHospital.recommended ?? recommendedHospital;
+    const h = rec.hospital ?? rec;
     if (!h?.latitude || !h?.longitude) return;
 
+    // User location marker (pulsing blue dot)
+    const userLoc = recommendedHospital.userLocation;
+    if (userLoc) {
+      const userEl = document.createElement('div');
+      userEl.style.cssText = `
+        width: 16px; height: 16px; border-radius: 50%;
+        background: #3b82f6; border: 3px solid #fff;
+        box-shadow: 0 0 0 0 rgba(59,130,246,0.5);
+        animation: pulse-ring 2s infinite;
+      `;
+      userMarkerRef.current = new mapboxgl.Marker({ element: userEl })
+        .setLngLat([userLoc.lng, userLoc.lat])
+        .addTo(map);
+    }
+
+    // Recommended hospital marker
     const el = document.createElement('div');
     el.style.cssText = `
       width: 32px; height: 32px; border-radius: 50%;
@@ -157,16 +185,63 @@ export default function ClearPathMap({
       box-shadow: 0 0 16px rgba(34,197,94,0.7);
       animation: bounce 1s infinite;
     `;
-
     recommendedMarkerRef.current = new mapboxgl.Marker({ element: el })
       .setLngLat([h.longitude, h.latitude])
-      .addTo(mapRef.current);
+      .addTo(map);
 
-    mapRef.current.flyTo({
-      center: [h.longitude, h.latitude],
-      zoom: 13,
-      speed: 1.2,
+    // Draw driving route (if geometry available)
+    const routeGeometry = rec.routeGeometry;
+    if (routeGeometry && map.isStyleLoaded()) {
+      map.addSource('driving-route', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: routeGeometry, properties: {} },
+      });
+      map.addLayer({
+        id: 'driving-route-line',
+        type: 'line',
+        source: 'driving-route',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#22c55e',
+          'line-width': 5,
+          'line-opacity': 0.85,
+        },
+      });
+    }
+
+    // Draw alternative routes as dashed lines
+    const alts = recommendedHospital.alternatives ?? [];
+    alts.forEach((alt: any, i: number) => {
+      if (alt.routeGeometry && map.isStyleLoaded()) {
+        map.addSource(`alt-route-${i}`, {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: alt.routeGeometry, properties: {} },
+        });
+        map.addLayer({
+          id: `alt-route-line-${i}`,
+          type: 'line',
+          source: `alt-route-${i}`,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#94a3b8',
+            'line-width': 3,
+            'line-opacity': 0.5,
+            'line-dasharray': [2, 2],
+          },
+        });
+      }
     });
+
+    // Fit bounds to show user + hospital
+    if (userLoc && routeGeometry?.coordinates) {
+      const bounds = new mapboxgl.LngLatBounds();
+      bounds.extend([userLoc.lng, userLoc.lat]);
+      bounds.extend([h.longitude, h.latitude]);
+      routeGeometry.coordinates.forEach((coord: [number, number]) => bounds.extend(coord));
+      map.fitBounds(bounds, { padding: 80, maxZoom: 14 });
+    } else {
+      map.flyTo({ center: [h.longitude, h.latitude], zoom: 13, speed: 1.2 });
+    }
   }, [recommendedHospital]);
 
   return (

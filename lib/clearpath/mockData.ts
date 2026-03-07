@@ -10,7 +10,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 471,
     erBeds: 60,
     phone: '416-340-4800',
-    website: 'https://www.uhn.ca'
+    website: 'https://www.uhn.ca',
+    specialties: ['cardiac', 'transplant', 'respiratory']
   },
   {
     id: 'stmichaels',
@@ -21,7 +22,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 463,
     erBeds: 55,
     phone: '416-360-4000',
-    website: 'https://unityhealth.to'
+    website: 'https://unityhealth.to',
+    specialties: ['trauma', 'neurology', 'cardiac']
   },
   {
     id: 'sunnybrook',
@@ -32,7 +34,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 1325,
     erBeds: 72,
     phone: '416-480-6100',
-    website: 'https://sunnybrook.ca'
+    website: 'https://sunnybrook.ca',
+    specialties: ['trauma', 'stroke', 'burn']
   },
   {
     id: 'sinai',
@@ -43,7 +46,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 442,
     erBeds: 40,
     phone: '416-596-4200',
-    website: 'https://www.sinaihealth.ca'
+    website: 'https://www.sinaihealth.ca',
+    specialties: ['obstetrics', 'respiratory']
   },
   {
     id: 'western',
@@ -54,7 +58,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 272,
     erBeds: 45,
     phone: '416-603-2581',
-    website: 'https://www.uhn.ca'
+    website: 'https://www.uhn.ca',
+    specialties: ['neurology', 'stroke', 'orthopedic']
   },
   {
     id: 'scarborough-general',
@@ -65,7 +70,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 620,
     erBeds: 50,
     phone: '416-438-2911',
-    website: 'https://www.shn.ca'
+    website: 'https://www.shn.ca',
+    specialties: ['general', 'cardiac']
   },
   {
     id: 'north-york-general',
@@ -76,7 +82,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 420,
     erBeds: 48,
     phone: '416-756-6000',
-    website: 'https://www.nygh.on.ca'
+    website: 'https://www.nygh.on.ca',
+    specialties: ['general', 'respiratory', 'orthopedic']
   },
   {
     id: 'humber-river',
@@ -87,7 +94,8 @@ export const mockHospitals: Hospital[] = [
     totalBeds: 656,
     erBeds: 52,
     phone: '416-747-3400',
-    website: 'https://www.hrh.ca'
+    website: 'https://www.hrh.ca',
+    specialties: ['general', 'cardiac']
   }
 ];
 

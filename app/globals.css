@@ -1,71 +1,19 @@
 @import "tailwindcss";
 
 body {
-  font-family: "Archivo", sans-serif;
+  font-family: var(--font-sans), "Plus Jakarta Sans", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 @layer components {
   .instrument {
-    font-family: var(--font-script), "Instrument Serif", serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
   }
   .lp {
     min-height: 100vh;
-    background: #f4efe6;
-    color: #1a1611;
-  }
-
-  .lp-nav {
-    position: fixed;
-    top: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: min(600px, 88vw);
-    padding: 0.85rem 1.8rem;
-    background: rgba(255, 255, 255, 0.88);
-    backdrop-filter: blur(14px);
-    border-radius: 50px;
-    box-shadow:
-      0 1px 3px rgba(0, 0, 0, 0.04),
-      0 8px 30px rgba(0, 0, 0, 0.06);
-  }
-
-  .lp-nav-logo {
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
-    font-weight: 700;
-    font-size: 1.15rem;
-    color: #1a1611;
-    letter-spacing: -0.01em;
-  }
-
-  .lp-nav-links {
-    display: flex;
-    gap: 1.75rem;
-  }
-
-  .lp-nav-links a {
-    font-size: 0.78rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: #3d362c;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 9999px;
-    border: 2px solid transparent;
-    outline: none;
-    transition:
-      color 0.2s,
-      border-color 0.2s;
-  }
-
-  .lp-nav-links a:hover {
-    color: #1a1611;
-    border-color: #1a1611;
+    background: #0f172a;
+    color: #f1f5f9;
   }
 
   .lp-hero-wrap {
@@ -119,39 +67,12 @@ body {
       );
   }
 
-  .lp-fireflies {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    z-index: 2;
-    transition: transform 0.4s ease-out;
-    transform: translate(calc(var(--mx) * 1.8), calc(var(--my) * 1.5));
-  }
-
-  .lp-firefly {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #e8d49a;
-    box-shadow:
-      0 0 6px 2px rgba(232, 212, 154, 0.6),
-      0 0 18px 6px rgba(232, 212, 154, 0.2);
-    animation: fireflyPulse 3s ease-in-out infinite alternate;
-  }
-
-  .lp-firefly:nth-child(odd) {
-    width: 3px;
-    height: 3px;
-    background: #f0e6c0;
-  }
-
   .lp-hero-title {
     position: absolute;
     bottom: 2.5rem;
     left: 3rem;
     z-index: 3;
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-weight: 400;
     font-size: clamp(3rem, 7vw, 5.5rem);
@@ -168,7 +89,7 @@ body {
     right: 3rem;
     z-index: 3;
     padding: 0.75rem 2rem;
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 0.95rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -205,22 +126,22 @@ body {
     gap: 0;
   }
 
-  /* thin gold rule */
+  /* thin accent rule */
   .lp-stmt-rule {
     display: block;
     width: 48px;
     height: 1px;
-    background: linear-gradient(90deg, transparent, #c5a44e, transparent);
+    background: linear-gradient(90deg, transparent, #dc2626, transparent);
     margin-bottom: 3rem;
   }
 
   /* small intro line */
   .lp-stmt-small {
-    font-family: var(--font-archivo), sans-serif;
+    font-family: var(--font-sans), sans-serif;
     font-size: 0.78rem;
     letter-spacing: 0.18em;
     text-transform: uppercase;
-    color: #8a8279;
+    color: #94a3b8;
     margin: 0 0 3.5rem;
   }
 
@@ -233,47 +154,36 @@ body {
     margin: 0;
   }
 
-  /* "Shape a new Golden Age" line */
+  /* main statement line */
   .lp-stmt-main {
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: clamp(1.5rem, 3vw, 2.1rem);
     font-weight: 400;
     line-height: 1.5;
-    color: #1a1611;
+    color: #f1f5f9;
     margin: 0 0 3rem;
     letter-spacing: -0.01em;
   }
 
   /* subtitle / supporting text */
   .lp-stmt-sub {
-    font-family: var(--font-archivo), sans-serif;
+    font-family: var(--font-sans), sans-serif;
     font-size: 0.82rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: #8a8279;
+    color: #94a3b8;
     margin: 0 0 3.5rem;
   }
 
-  /* gold accent — the showpiece */
+  /* ER accent — the showpiece */
   .lp-stmt-gold {
-    font-family: var(--font-script), "Instrument Serif", serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: clamp(2.4rem, 5vw, 3.8rem);
     font-style: italic;
     font-weight: 400;
     line-height: 1;
     letter-spacing: -0.01em;
-    background: linear-gradient(
-      135deg,
-      #b8942f 0%,
-      #e8c44a 25%,
-      #f5dfa0 50%,
-      #d4a843 75%,
-      #c5944a 100%
-    );
-    background-size: 200% 200%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #dc2626;
     animation: goldShimmer 6s ease-in-out infinite;
   }
 
@@ -284,17 +194,17 @@ body {
     gap: 0.6rem;
     margin-top: 1rem;
     padding: 1rem 2.6rem;
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 0.92rem;
     letter-spacing: 0.06em;
-    color: #faf5eb;
-    background: linear-gradient(135deg, #1a1611 0%, #2d261c 100%);
-    border: 1px solid rgba(197, 164, 78, 0.2);
+    color: #fff;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border: 1px solid rgba(220, 38, 38, 0.3);
     border-radius: 50px;
     text-decoration: none;
     box-shadow:
-      0 2px 12px rgba(26, 22, 17, 0.12),
-      0 0 0 0 rgba(197, 164, 78, 0);
+      0 2px 12px rgba(220, 38, 38, 0.2),
+      0 0 0 0 rgba(220, 38, 38, 0);
     transition:
       transform 0.25s ease,
       box-shadow 0.3s ease,
@@ -303,10 +213,7 @@ body {
 
   .lp-stmt-cta:hover {
     transform: translateY(-2px);
-    border-color: rgba(197, 164, 78, 0.45);
-    box-shadow:
-      0 8px 30px rgba(26, 22, 17, 0.18),
-      0 0 0 1px rgba(197, 164, 78, 0.1);
+    box-shadow: 0 8px 28px rgba(220, 38, 38, 0.35);
   }
 
   /* fade-in / slide-up animation */
@@ -318,11 +225,11 @@ body {
 
   /* consistent narrative lines */
   .lp-stmt-line {
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: clamp(1.5rem, 3vw, 2.1rem);
     font-weight: 400;
     line-height: 1.5;
-    color: #1a1611;
+    color: #f1f5f9;
     margin: 0;
     letter-spacing: -0.01em;
   }
@@ -338,20 +245,20 @@ body {
 
   .lp-detail {
     padding: 2.5rem 2rem;
-    border-top: 1px solid #e8e0d2;
+    border-top: 1px solid #334155;
   }
 
   .lp-detail-num {
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-size: 0.85rem;
-    color: #8a8279;
+    color: #94a3b8;
     display: block;
     margin-bottom: 1rem;
   }
 
   .lp-detail h3 {
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 1.35rem;
     font-weight: 600;
     margin: 0 0 0.75rem;
@@ -361,36 +268,36 @@ body {
   .lp-detail p {
     font-size: 0.92rem;
     line-height: 1.7;
-    color: #8a8279;
+    color: #94a3b8;
     margin: 0;
   }
 
   .lp-detail-link {
     display: inline-block;
     margin-top: 1rem;
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-size: 0.88rem;
-    color: #3d362c;
+    color: #cbd5e1;
     text-decoration: none;
     transition: color 0.2s;
   }
 
   .lp-detail-link:hover {
-    color: #1a1611;
+    color: #dc2626;
   }
 
   .lp-closing {
     text-align: center;
     padding: 5rem 2rem;
-    border-top: 1px solid #e8e0d2;
+    border-top: 1px solid #334155;
   }
 
   .lp-closing-text {
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-size: 1rem;
-    color: #8a8279;
+    color: #94a3b8;
     margin: 0 0 2rem;
     letter-spacing: 0.04em;
   }
@@ -406,10 +313,10 @@ body {
     display: inline-flex;
     align-items: center;
     padding: 0.8rem 2rem;
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 0.9rem;
-    background: #1a1611;
-    color: #f4efe6;
+    background: #dc2626;
+    color: #fff;
     border-radius: 50px;
     text-decoration: none;
     letter-spacing: 0.02em;
@@ -420,18 +327,18 @@ body {
 
   .lp-btn-warm:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 24px rgba(26, 22, 17, 0.18);
+    box-shadow: 0 6px 24px rgba(220, 38, 38, 0.35);
   }
 
   .lp-btn-outline {
     display: inline-flex;
     align-items: center;
     padding: 0.8rem 2rem;
-    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-size: 0.9rem;
     background: transparent;
-    color: #3d362c;
-    border: 1px solid #e8e0d2;
+    color: #cbd5e1;
+    border: 1px solid #475569;
     border-radius: 50px;
     text-decoration: none;
     letter-spacing: 0.02em;
@@ -441,27 +348,27 @@ body {
   }
 
   .lp-btn-outline:hover {
-    border-color: #3d362c;
-    color: #1a1611;
+    border-color: #94a3b8;
+    color: #f1f5f9;
   }
 
   .lp-footer {
     text-align: center;
     padding: 2.5rem 2rem;
-    border-top: 1px solid #e8e0d2;
+    border-top: 1px solid #334155;
   }
 
   .lp-footer a {
     font-size: 0.78rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: #8a8279;
+    color: #94a3b8;
     text-decoration: none;
     transition: color 0.2s;
   }
 
   .lp-footer a:hover {
-    color: #1a1611;
+    color: #f87171;
   }
 
   /* Map 3D page (hero-style consistency) */
@@ -533,20 +440,6 @@ body {
   }
 }
 
-@keyframes fireflyPulse {
-  0% {
-    opacity: 0.15;
-    transform: scale(0.8) translateY(0px);
-  }
-  50% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0.3;
-    transform: scale(1.1) translateY(-6px);
-  }
-}
-
 @media (max-width: 768px) {
   .lp-hero-wrap {
     padding: 0.75rem;
@@ -615,7 +508,7 @@ h1,
 h2,
 h3,
 .serif-font {
-  font-family: "Lora", serif;
+  font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
 }
 
 /* Glass morphism effect */
