@@ -73,6 +73,8 @@ export interface BuildingSpecification {
   hospitalOperatingRooms?: number;
   hospitalBeds?: number;
   hospitalEmergencyBays?: number;
+  hospitalAmbulances?: number;
+  hospitalTraumaRooms?: number;  // dedicated trauma/resuscitation rooms in ED
   hospitalFloors?: number;       // tracked floors for hospital use
 }
 
@@ -127,6 +129,8 @@ export const DEFAULT_BUILDING_SPEC: BuildingSpecification = {
   hospitalOperatingRooms: 0,
   hospitalBeds: 0,
   hospitalEmergencyBays: 0,
+  hospitalAmbulances: 0,
+  hospitalTraumaRooms: 0,
 };
 
 // Multi-building support types
