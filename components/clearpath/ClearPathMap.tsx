@@ -140,8 +140,8 @@ export default function ClearPathMap({
     async function fetchData() {
       try {
         const [hospRes, congRes] = await Promise.all([
-          fetch('/api/clearpath/hospitals'),
-          fetch('/api/clearpath/congestion'),
+          fetch(`/api/clearpath/hospitals?city=${cityId}`),
+          fetch(`/api/clearpath/congestion?city=${cityId}`),
         ]);
         const hospData = await hospRes.json();
         const congData = await congRes.json();
@@ -152,7 +152,7 @@ export default function ClearPathMap({
       }
     }
     fetchData();
-  }, []);
+  }, [cityId]);
 
   useEffect(() => {
     const map = mapRef.current;
