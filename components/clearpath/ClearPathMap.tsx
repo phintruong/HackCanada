@@ -311,10 +311,16 @@ export default function ClearPathMap({
         : 1.8;
 
       function animateDash() {
-        if (!map) return;
+        const currentMap = mapRef.current;
+        if (!currentMap) return;
         dashOffset -= avgSpeed * 0.15;
         const phase = ((dashOffset % 7) + 7) % 7;
-        map.setPaintProperty('driving-route-anim-line', 'line-dasharray', [phase, 4, 3]);
+        try {
+          if (!currentMap.getLayer('driving-route-anim-line')) return;
+          currentMap.setPaintProperty('driving-route-anim-line', 'line-dasharray', [phase, 4, 3]);
+        } catch {
+          return;
+        }
         trafficAnimRef.current = requestAnimationFrame(animateDash);
       }
       trafficAnimRef.current = requestAnimationFrame(animateDash);

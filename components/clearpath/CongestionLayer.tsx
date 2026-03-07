@@ -269,9 +269,14 @@ export default function CongestionLayer({ map, hospitals, congestion }: Congesti
 
     return () => {
       popupRef.current?.remove();
-      if (map.getLayer('hospital-labels')) map.removeLayer('hospital-labels');
-      if (map.getLayer(layerId)) map.removeLayer(layerId);
-      if (map.getSource(sourceId)) map.removeSource(sourceId);
+      if (!map) return;
+      try {
+        if (map.getLayer('hospital-labels')) map.removeLayer('hospital-labels');
+        if (map.getLayer(layerId)) map.removeLayer(layerId);
+        if (map.getSource(sourceId)) map.removeSource(sourceId);
+      } catch {
+        // Map may be destroyed or invalid; ignore cleanup errors
+      }
     };
   }, [map, hospitals, congestion]);
 
