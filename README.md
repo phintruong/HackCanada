@@ -2,19 +2,21 @@
 
 The right care, at the right place, in under 3 minutes.
 
-A cross-platform triage guidance app for Canadians. Uses camera-based vitals, structured symptom intake, and AI classification to recommend where to seek care — virtual, urgent care, or ER.
+A cross-platform triage guidance app for Canadians. Uses camera-based vitals, structured symptom intake, and AI classification to recommend where to seek care — virtual, urgent care, or ER. Works on mobile (iOS/Android) and web (laptop/desktop).
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | React Native (Expo), TypeScript |
+| Frontend | React Native (Expo), TypeScript, React Native Web |
 | Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL + Redis |
-| AI | Gemini 1.5 Flash, Backboard.io multi-agent |
+| Database | PostgreSQL + Redis (caching) |
+| AI | Gemini 1.5 Flash (Google Generative AI) |
 | Vitals | Presage SmartSpectra SDK |
-| Auth | Auth0 |
-| Maps | Mapbox |
+| Maps | Mapbox (geocoding + Places API) |
+| State | Zustand |
+| i18n | react-i18next (EN + FR) |
+| Rate Limiting | express-rate-limit |
 
 ## Project Structure
 
@@ -25,14 +27,15 @@ HackCanada/
 ├── ertriage-backend/    # Node.js + Express API
 │   └── src/
 │       ├── routes/      # API endpoints
-│       ├── services/    # Gemini, Presage, Backboard, Mapbox, wait times
-│       ├── middleware/  # Auth0 JWT, rate limiting, error handling
+│       ├── services/    # Gemini, Presage, Mapbox, wait times
+│       ├── middleware/  # Rate limiting, error handling
 │       ├── db/          # PostgreSQL schema + queries
 │       └── cache/       # Redis client
-└── ertriage-frontend/   # Expo (React Native) app
+└── ertriage-frontend/   # Expo (React Native + Web) app
     └── src/
         ├── screens/     # Home, Vitals, Symptoms, Result, History, Family, etc.
-        ├── components/  # VitalsMeter, RiskBadge, WaitTimeCard, SymptomCard, etc.
+        ├── components/  # VitalsMeter, RiskBadge, ResponsiveContainer, etc.
+        ├── hooks/       # useResponsive (breakpoints + responsive helpers)
         ├── api/         # API client functions
         ├── store/       # Zustand global state
         └── i18n/        # EN + FR translations
@@ -73,23 +76,16 @@ Edit each `.env` file and fill in your keys:
 | `PORT` | Server port (default: 3001) |
 | `DATABASE_URL` | PostgreSQL connection string |
 | `REDIS_URL` | Redis connection string |
-| `AUTH0_AUDIENCE` | Auth0 API audience |
-| `AUTH0_ISSUER_BASE_URL` | Auth0 tenant URL |
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `PRESAGE_API_KEY` | Presage SmartSpectra key |
-| `BACKBOARD_API_KEY` | Backboard.io key |
 | `MAPBOX_SECRET_TOKEN` | Mapbox secret token |
 
 **Frontend (`ertriage-frontend/.env`)**
 | Variable | Description |
 |----------|-------------|
 | `EXPO_PUBLIC_API_URL` | Backend URL (default: `http://localhost:3001`) |
-| `EXPO_PUBLIC_AUTH0_DOMAIN` | Auth0 domain |
-| `EXPO_PUBLIC_AUTH0_CLIENT_ID` | Auth0 client ID |
 | `EXPO_PUBLIC_MAPBOX_TOKEN` | Mapbox public token |
 | `EXPO_PUBLIC_PRESAGE_KEY` | Presage key |
-
-> Auth0 is optional for local dev — the backend runs without it and skips auth middleware.
 
 ### 3. Set up the database
 
@@ -110,6 +106,18 @@ cd ertriage-frontend && npm start
 
 Then press `w` for web, `i` for iOS simulator, or `a` for Android emulator.
 
+## Responsive Design
+
+The frontend uses a `ResponsiveContainer` wrapper and `useResponsive` hook to adapt layouts across devices:
+
+| Breakpoint | Width | Padding | Max Content Width |
+|------------|-------|---------|-------------------|
+| Mobile | < 768px | 24px | Full width |
+| Tablet | 768–1023px | 32px | 720px centered |
+| Desktop | 1024px+ | 40px | 800px centered |
+
+All 9 screens use `ResponsiveContainer` so content is constrained and centered on larger screens while remaining full-width on mobile.
+
 ## API Endpoints
 
 | Method | Endpoint | Description |
@@ -122,15 +130,15 @@ Then press `w` for web, `i` for iOS simulator, or `a` for Android emulator.
 | PATCH | `/users/:id` | Update user profile |
 | GET | `/family/:userId` | List family members |
 | POST | `/family` | Add family member |
+| DELETE | `/family/:id` | Remove family member |
 | GET | `/history/:userId` | Get past triage sessions |
-| POST | `/agents/query` | Query Backboard multi-agent |
 | GET | `/health` | Server health check |
 
 ## Core Flow
 
 1. User opens app or scans QR code
 2. Camera captures vitals via Presage (heart rate, respiratory rate, stress)
-3. User answers 6 symptom questions
+3. User answers 6 symptom questions (tappable cards)
 4. Backend sends vitals + symptoms to Gemini for classification
 5. User receives a risk level (green / yellow / red) with plain-language explanation
 6. App shows ER wait times and nearest clinics
@@ -139,8 +147,8 @@ Then press `w` for web, `i` for iOS simulator, or `a` for Android emulator.
 
 | Role | Scope |
 |------|-------|
-| Frontend Team | React Native screens, Presage SDK, Auth0 SDK, Mapbox GL, Zustand, i18n |
-| Backend Team | Express API, PostgreSQL, Redis, Gemini, Backboard, Mapbox Places, Auth0 JWT, Vultr |
+| Frontend Team | React Native screens, Presage SDK, Mapbox GL, Zustand, i18n, responsive layout |
+| Backend Team | Express API, PostgreSQL, Redis, Gemini, Mapbox Places, Vultr deployment |
 
 ## License
 

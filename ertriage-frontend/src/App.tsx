@@ -1,7 +1,14 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = '[role="button"] { cursor: pointer; }';
+  document.head.appendChild(style);
+}
 import HomeScreen from './screens/HomeScreen';
 import VitalsScreen from './screens/VitalsScreen';
 import SymptomsScreen from './screens/SymptomsScreen';

@@ -2,15 +2,13 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
-import { useStore } from '../store';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 export default function HomeScreen({ navigation }: Props) {
-  const user = useStore((s) => s.user);
-
   return (
-    <View style={styles.container}>
+    <ResponsiveContainer center>
       <Text style={styles.title}>ER Triage E-Clip</Text>
       <Text style={styles.subtitle}>The right care, at the right place, in under 3 minutes.</Text>
 
@@ -35,12 +33,11 @@ export default function HomeScreen({ navigation }: Props) {
           <Text style={styles.secondaryButtonText}>Settings</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 28, fontWeight: 'bold', color: '#0066CC', marginBottom: 8 },
   subtitle: { fontSize: 16, color: '#555', textAlign: 'center', marginBottom: 32 },
   primaryButton: { backgroundColor: '#0066CC', paddingVertical: 16, paddingHorizontal: 48, borderRadius: 12, marginBottom: 24 },

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 
 const PROVINCES = ['ON', 'BC', 'AB', 'QC', 'MB', 'SK', 'NS', 'NB', 'NL', 'PE'] as const;
 
@@ -7,7 +8,7 @@ export default function OHIPScreen() {
   const [selectedProvince, setSelectedProvince] = useState<string>('ON');
 
   return (
-    <ScrollView style={styles.container}>
+    <ResponsiveContainer scroll>
       <Text style={styles.title}>Insurance & Coverage Guide</Text>
       <Text style={styles.subtitle}>Select your province to see coverage details</Text>
 
@@ -26,16 +27,14 @@ export default function OHIPScreen() {
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Coverage for {selectedProvince}</Text>
         <Text style={styles.cardText}>
-          {/* TODO: Load province-specific OHIP/coverage data from backend */}
           Coverage information for {selectedProvince} will be loaded from the backend.
         </Text>
       </View>
-    </ScrollView>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0066CC', marginBottom: 8 },
   subtitle: { fontSize: 14, color: '#666', marginBottom: 16 },
   provinceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 24 },

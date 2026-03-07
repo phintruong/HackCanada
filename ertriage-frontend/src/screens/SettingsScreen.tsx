@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 import { useStore } from '../store';
 
 export default function SettingsScreen() {
@@ -7,7 +8,7 @@ export default function SettingsScreen() {
   const setLanguage = useStore((s) => s.setLanguage);
 
   return (
-    <View style={styles.container}>
+    <ResponsiveContainer>
       <Text style={styles.title}>Settings</Text>
 
       <Text style={styles.sectionTitle}>Language</Text>
@@ -30,12 +31,11 @@ export default function SettingsScreen() {
         <Text style={styles.settingText}>Push Notifications</Text>
         <Text style={styles.settingValue}>On</Text>
       </TouchableOpacity>
-    </View>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0066CC', marginBottom: 24 },
   sectionTitle: { fontSize: 16, fontWeight: '600', color: '#333', marginBottom: 12, marginTop: 16 },
   row: { flexDirection: 'row', gap: 12 },

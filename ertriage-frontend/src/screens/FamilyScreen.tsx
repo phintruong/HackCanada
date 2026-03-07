@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import FamilyMemberCard from '../components/FamilyMemberCard';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 import { FamilyMember } from '../../../shared/types';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Family'>;
@@ -17,7 +18,7 @@ export default function FamilyScreen({ navigation }: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <ResponsiveContainer>
       <Text style={styles.title}>Family Profiles</Text>
 
       {members.length === 0 ? (
@@ -35,12 +36,11 @@ export default function FamilyScreen({ navigation }: Props) {
       <TouchableOpacity style={styles.addButton}>
         <Text style={styles.addButtonText}>+ Add Family Member</Text>
       </TouchableOpacity>
-    </View>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0066CC', marginBottom: 16 },
   empty: { color: '#999', fontSize: 16, marginBottom: 24 },
   addButton: { backgroundColor: '#0066CC', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16 },

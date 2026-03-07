@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import RiskBadge from '../components/RiskBadge';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 import { fetchHistory } from '../api/user';
 import { TriageSession } from '../../../shared/types';
 
@@ -28,7 +29,7 @@ export default function HistoryScreen({}: Props) {
   }
 
   return (
-    <View style={styles.container}>
+    <ResponsiveContainer>
       <Text style={styles.title}>Triage History</Text>
       {loading ? (
         <Text style={styles.loading}>Loading...</Text>
@@ -49,12 +50,11 @@ export default function HistoryScreen({}: Props) {
           )}
         />
       )}
-    </View>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0066CC', marginBottom: 16 },
   loading: { color: '#666', fontSize: 16 },
   empty: { color: '#999', fontSize: 16 },

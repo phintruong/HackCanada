@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import VitalsMeter from '../components/VitalsMeter';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 import { useStore } from '../store';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Vitals'>;
@@ -25,16 +26,12 @@ export default function VitalsScreen({ navigation, route }: Props) {
   });
 
   useEffect(() => {
-    // TODO: Initialize Presage SmartSpectra SDK
-    // On failure, set presageFailed = true
     initializePresage();
   }, []);
 
   async function initializePresage() {
     try {
       // TODO: Replace with actual Presage SDK initialization
-      // const token = await PresageSDK.initialize(PRESAGE_API_KEY);
-      // if (!token) setPresageFailed(true);
     } catch {
       setPresageFailed(true);
     }
@@ -42,7 +39,6 @@ export default function VitalsScreen({ navigation, route }: Props) {
 
   function startScan() {
     setScanning(true);
-    // 30-second capture window
     const interval = setInterval(() => {
       setProgress((prev) => {
         if (prev >= 100) {
@@ -71,7 +67,7 @@ export default function VitalsScreen({ navigation, route }: Props) {
 
   if (presageFailed) {
     return (
-      <View style={styles.container}>
+      <ResponsiveContainer>
         <Text style={styles.title}>Enter Your Vitals</Text>
         <Text style={styles.label}>Heart Rate (bpm)</Text>
         <TextInput style={styles.input} keyboardType="numeric" value={manualHR} onChangeText={setManualHR} placeholder="e.g. 72" />
@@ -80,12 +76,12 @@ export default function VitalsScreen({ navigation, route }: Props) {
         <TouchableOpacity style={styles.button} onPress={handleContinue}>
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
-      </View>
+      </ResponsiveContainer>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <ResponsiveContainer>
       <Text style={styles.title}>Vitals Scan</Text>
       <Text style={styles.subtitle}>Hold your face steady in front of the camera</Text>
 
@@ -109,12 +105,11 @@ export default function VitalsScreen({ navigation, route }: Props) {
           <Text style={styles.buttonText}>Continue</Text>
         </TouchableOpacity>
       )}
-    </View>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0066CC', marginBottom: 8 },
   subtitle: { fontSize: 14, color: '#666', marginBottom: 24 },
   label: { fontSize: 14, fontWeight: '500', color: '#333', marginBottom: 4, marginTop: 16 },

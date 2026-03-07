@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import SymptomCard from '../components/SymptomCard';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 import { useStore } from '../store';
 import { submitTriage } from '../api/triage';
 
@@ -55,7 +56,7 @@ export default function SymptomsScreen({ navigation, route }: Props) {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ResponsiveContainer scroll>
       <Text style={styles.title}>How are you feeling?</Text>
       <Text style={styles.subtitle}>Tap any symptoms you are experiencing</Text>
 
@@ -71,12 +72,11 @@ export default function SymptomsScreen({ navigation, route }: Props) {
       <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
         <Text style={styles.buttonText}>{loading ? 'Analyzing...' : 'Get Recommendation'}</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   title: { fontSize: 24, fontWeight: 'bold', color: '#0066CC', marginBottom: 8 },
   subtitle: { fontSize: 14, color: '#666', marginBottom: 24 },
   button: { backgroundColor: '#0066CC', paddingVertical: 14, borderRadius: 12, alignItems: 'center', marginTop: 16, marginBottom: 32 },

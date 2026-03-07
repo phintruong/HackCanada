@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../App';
 import RiskBadge from '../components/RiskBadge';
 import WaitTimeCard from '../components/WaitTimeCard';
+import ResponsiveContainer from '../components/ResponsiveContainer';
 import { useStore } from '../store';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Result'>;
@@ -13,14 +14,14 @@ export default function ResultScreen({ navigation }: Props) {
 
   if (!result) {
     return (
-      <View style={styles.container}>
+      <ResponsiveContainer>
         <Text>No result available.</Text>
-      </View>
+      </ResponsiveContainer>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ResponsiveContainer scroll>
       <RiskBadge level={result.riskLevel} />
 
       <Text style={styles.recommendation}>{result.recommendation}</Text>
@@ -49,12 +50,11 @@ export default function ResultScreen({ navigation }: Props) {
       <TouchableOpacity style={styles.homeButton} onPress={() => navigation.navigate('Home')}>
         <Text style={styles.homeButtonText}>Back to Home</Text>
       </TouchableOpacity>
-    </ScrollView>
+    </ResponsiveContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24, backgroundColor: '#F5F7FA' },
   recommendation: { fontSize: 20, fontWeight: '600', color: '#333', marginTop: 16, marginBottom: 8 },
   explanation: { fontSize: 16, color: '#555', lineHeight: 24, marginBottom: 24 },
   section: { marginBottom: 24 },
