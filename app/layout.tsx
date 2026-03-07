@@ -1,34 +1,17 @@
 import type { Metadata } from "next";
-import { Archivo, Lora, Playfair_Display, Instrument_Serif } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const archivo = Archivo({
-  weight: ["400", "500", "700", "800"],
+const plusJakarta = Plus_Jakarta_Sans({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
-  variable: "--font-archivo",
-});
-
-const lora = Lora({
-  weight: ["400", "700"],
-  subsets: ["latin"],
-  variable: "--font-lora",
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-});
-
-const instrumentSerif = Instrument_Serif({
-  weight: "400",
   style: ["normal", "italic"],
-  subsets: ["latin"],
-  variable: "--font-script",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: "KingsView — Urban Planning for Kingston",
-  description: "3D urban planning tool for the City of Kingston. Design buildings, simulate construction timelines, and measure environmental impact before breaking ground.",
+  title: "ClearPath ER — Reduce ER Congestion",
+  description: "Model ER placement, triage by severity, and route patients. For Ontario healthcare and civilians.",
 };
 
 export default function RootLayout({
@@ -39,7 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${archivo.variable} ${lora.variable} ${playfair.variable} ${instrumentSerif.variable} antialiased`}
+        className={`${plusJakarta.variable} antialiased font-sans`}
       >
         {children}
         <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" async></script>

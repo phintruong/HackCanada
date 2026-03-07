@@ -8,6 +8,7 @@ export interface Hospital {
   erBeds: number;
   phone?: string;
   website?: string;
+  specialties?: string[];
 }
 
 export interface CongestionSnapshot {
@@ -58,15 +59,30 @@ export interface TriageResponse {
 }
 
 export interface RouteRequest {
-  userLat: number;
-  userLng: number;
+  userLat?: number;
+  userLng?: number;
+  postalCode?: string;
   severity: 'critical' | 'urgent' | 'non-urgent';
   city: string;
+  symptoms?: SymptomsPayload;
+}
+
+export interface ScoredHospital {
+  hospital: Hospital;
+  score: number;
+  drivingTimeMinutes: number;
+  waitMinutes: number;
+  adjustedWaitMinutes: number;
+  distanceKm: number;
+  occupancyPct: number;
+  specialtyMatch: boolean;
+  routeGeometry: any;
+  totalEstimatedMinutes: number;
+  reason: string;
 }
 
 export interface RouteResponse {
-  hospital: Hospital;
-  distanceKm: number;
-  waitMinutes: number;
-  reason: string;
+  recommended: ScoredHospital;
+  alternatives: ScoredHospital[];
+  userLocation: { lat: number; lng: number };
 }

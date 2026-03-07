@@ -45,14 +45,21 @@ export default function Landing() {
 
   return (
     <div className="lp">
-      {/* ───── FLOATING NAV ───── */}
-      <nav className="lp-nav">
-        <span className="lp-nav-logo">KingsView</span>
-        <div className="lp-nav-links">
-          <Link href="/map">Explore</Link>
-          <Link href="/editor">Build</Link>
-        </div>
-      </nav>
+      {/* Top buttons */}
+      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center gap-4 pt-5">
+        <Link
+          href="/map"
+          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-600 rounded-full shadow-sm hover:shadow transition-all"
+        >
+          Explore
+        </Link>
+        <Link
+          href="/editor"
+          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-[#dc2626] hover:bg-[#b91c1c] rounded-full shadow-sm hover:shadow transition-all"
+        >
+          Build
+        </Link>
+      </div>
 
       {/* Spacer so content reaches viewport when overlay is full (progress 0.5) */}
       <div style={{ height: '150vh' }} />
@@ -66,21 +73,10 @@ export default function Landing() {
           <img src="/thumb.jpg" alt="" className="lp-hero-img" draggable={false} />
           <div className="lp-hero-vignette" />
 
-          <div className="lp-fireflies">
-            {Array.from({ length: 14 }).map((_, i) => (
-              <span key={i} className="lp-firefly" style={{
-                left: `${10 + (i * 37 + i * i * 7) % 80}%`,
-                top: `${15 + (i * 53 + i * 3) % 65}%`,
-                animationDelay: `${(i * 0.7) % 4}s`,
-                animationDuration: `${3 + (i % 3)}s`,
-              }} />
-            ))}
-          </div>
-
-          <h1 className="lp-hero-title">Reimagine.</h1>
+          <h1 className="lp-hero-title">ClearPath.</h1>
 
           <Link href="/map" className="lp-hero-cta">
-            Enter the Golden Age&ensp;&rarr;
+            See the Map&ensp;&rarr;
           </Link>
 
           {/* White overlay that fades in - pointer-events: none so it doesn't block button clicks */}
@@ -88,7 +84,7 @@ export default function Landing() {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: '#fff',
+              backgroundColor: '#1e293b',
               opacity: overlayOpacity,
               zIndex: 10,
               pointerEvents: 'none',
@@ -106,7 +102,7 @@ export default function Landing() {
           position: 'sticky',
           top: 0,
           zIndex: 20,
-          backgroundColor: '#fff',
+          backgroundColor: '#1e293b',
           paddingRight: '1.5rem',
         }}
       >
@@ -115,20 +111,20 @@ export default function Landing() {
           <span className="lp-stmt-rule lp-fade" style={{ animationDelay: '0.1s' }} />
 
           <p className="lp-stmt-small lp-fade" style={{ animationDelay: '0.25s' }}>
-            Every golden age begins with a vision. Legacies are built to last.
+            Every second in an ER matters. Better routing saves lives.
           </p>
 
           <div className="lp-stmt-block lp-fade" style={{ animationDelay: '0.5s' }}>
-            <h2 className="lp-stmt-line">Kingston stands at the dawn of a new era.</h2>
-            <h2 className="lp-stmt-line">Let&apos;s build it together.</h2>
+            <h2 className="lp-stmt-line">Canada&apos;s ERs are overwhelmed.</h2>
+            <h2 className="lp-stmt-line">Let&apos;s fix that together.</h2>
           </div>
 
           <p className="lp-stmt-sub lp-fade" style={{ animationDelay: '0.75s' }}>
-            Craft the next chapter of prosperity.
+            Smarter placement. Faster triage. Shorter waits.
           </p>
 
           <h2 className="lp-stmt-main lp-fade" style={{ animationDelay: '0.95s' }}>
-            Shape a new <span className="lp-stmt-gold">Golden Age.</span>
+            See the problem. <span className="lp-stmt-gold">Place the solution.</span>
           </h2>
 
           <Link
@@ -136,36 +132,36 @@ export default function Landing() {
             className="lp-stmt-cta lp-fade"
             style={{ animationDelay: '1.35s' }}
           >
-            Enter the Golden Age&ensp;&rarr;
+            Open the Map&ensp;&rarr;
           </Link>
         </section>
 
         {/* ───── YOUR JOURNEY ───── */}
-<section className="bg-[#f4efe6]" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+<section className="bg-[#334155]" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
   <FeatureSteps
-    title="Building Kingston's Golden Age"
-    subtitle="Planning Kingston’s future with clarity and precision."
+    title="How ClearPath ER Works"
+    subtitle="Reducing ER congestion with data, simulation, and smart routing."
     features={[
       {
         step: 'Step 1',
-        title: 'Shape a New Golden Era',
+        title: 'See Every ER at a Glance',
         content:
-          'Turn concepts, sketches, and blueprints into intelligent 3D developments. Design spaces that power economic growth, strengthen communities, and define Kingston’s next chapter.',
-        image: '/carousel/city-of-kingston-ontario-canada.jpg',
+          "View a live 3D map of Toronto's emergency rooms. Congestion circles show real-time occupancy so you can instantly see which ERs are overwhelmed and which have capacity.",
+        image: '/carousel/busy-hospital-corridor-stockcake.jpg',
       },
       {
         step: 'Step 2',
-        title: 'Build Where Growth Happens',
+        title: 'Place a New ER, Watch Congestion Shift',
         content:
-          'Place projects directly into real city locations. Visualize how housing, business hubs, and public spaces connect neighborhoods and drive a thriving urban ecosystem.',
-        image: '/carousel/PZeSqEBK-RS12147_Kingston-Glamour-Shots-Downtown-1-1024x683.jpg',
+          'In Government mode, drop a proposed ER anywhere on the map, set its capacity, and run a Voronoi simulation to see how patient flow redistributes across the network.',
+        image: '/carousel/NewmanRegional-Health2-600x400.jpg',
       },
       {
         step: 'Step 3',
-        title: 'Design for Generations',
+        title: 'Get Routed to the Right ER',
         content:
-          "Plan with long-term success in mind. Simulate environmental, economic, and social impacts to ensure today's developments become tomorrow's lasting legacy.",
-        image: '/carousel/kingston-waterfront-at-night.jpg',
+          "In Civilian mode, answer a few triage questions and get a severity-based recommendation — nearest hospital for emergencies, least congested for non-urgent visits.",
+        image: '/carousel/istockphoto-600073876-612x612.jpg',
       },
     ]}
     autoPlayInterval={4000}
