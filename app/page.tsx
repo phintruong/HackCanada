@@ -170,7 +170,7 @@ export default function Landing() {
 </section>
         {/* ───── FOOTER ───── */}
         <footer className="lp-footer">
-          <a href="https://github.com/Lemirq/qhacks" target="_blank" rel="noopener noreferrer">
+          <a href="https://github.com/phintruong/HackCanada" target="_blank" rel="noopener noreferrer">
             Source on GitHub
           </a>
         </footer>
