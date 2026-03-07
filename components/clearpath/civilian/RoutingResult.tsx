@@ -9,6 +9,8 @@ interface RoutingResultProps {
   recommended: ScoredHospital;
   alternatives: ScoredHospital[];
   onBack: () => void;
+  onShowRoute?: (scored: ScoredHospital) => void;
+  activeRouteId?: string | null;
 }
 
 const severityConfig = {
@@ -17,7 +19,7 @@ const severityConfig = {
   'non-urgent': { bg: 'bg-green-500', text: 'text-white', label: 'NON-URGENT' },
 };
 
-function HospitalCard({ scored, rank }: { scored: ScoredHospital; rank: number }) {
+function HospitalCard({ scored, rank, onShowRoute, isRouteActive }: { scored: ScoredHospital; rank: number; onShowRoute?: (scored: ScoredHospital) => void; isRouteActive?: boolean }) {
   const h = scored.hospital;
   return (
     <div className={`bg-white border rounded-lg p-4 space-y-3 ${rank === 1 ? 'border-blue-300 shadow-md' : 'border-slate-200'}`}>
@@ -76,6 +78,27 @@ function HospitalCard({ scored, rank }: { scored: ScoredHospital; rank: number }
           Call {h.phone}
         </a>
       )}
+
+      {onShowRoute && !isRouteActive && (
+        <button
+          onClick={() => onShowRoute(scored)}
+          className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-semibold uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          </svg>
+          Show Route
+        </button>
+      )}
+
+      {isRouteActive && (
+        <div className="w-full py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[11px] font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          Route Shown
+        </div>
+      )}
     </div>
   );
 }
@@ -86,6 +109,8 @@ export default function RoutingResult({
   recommended,
   alternatives,
   onBack,
+  onShowRoute,
+  activeRouteId,
 }: RoutingResultProps) {
   const [showAlternatives, setShowAlternatives] = useState(false);
   const config = severityConfig[severity];
@@ -106,7 +131,7 @@ export default function RoutingResult({
         <p className="text-[11px] text-slate-700 leading-relaxed">{reasoning}</p>
       </div>
 
-      <HospitalCard scored={recommended} rank={1} />
+      <HospitalCard scored={recommended} rank={1} onShowRoute={onShowRoute} isRouteActive={(recommended.hospital?.id ?? (recommended.hospital as any)?._id) === activeRouteId} />
 
       {alternatives.length > 0 && (
         <div>
@@ -126,7 +151,7 @@ export default function RoutingResult({
           {showAlternatives && (
             <div className="space-y-3 mt-2">
               {alternatives.map((alt, i) => (
-                <HospitalCard key={alt.hospital.id || i} scored={alt} rank={i + 2} />
+                <HospitalCard key={alt.hospital.id || i} scored={alt} rank={i + 2} onShowRoute={onShowRoute} isRouteActive={(alt.hospital?.id ?? (alt.hospital as any)?._id) === activeRouteId} />
               ))}
             </div>
           )}

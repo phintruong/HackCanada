@@ -21,6 +21,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
   const [symptoms, setSymptoms] = useState<SymptomsPayload | null>(null);
   const [triageResult, setTriageResult] = useState<any>(null);
   const [routeResult, setRouteResult] = useState<any>(null);
+  const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleUseMyLocation = useCallback(() => {
@@ -150,6 +151,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
 
         const route = await routeRes.json();
         setRouteResult(route);
+        setActiveRouteId(route.recommended?.hospital?.id ?? route.recommended?.hospital?._id ?? null);
         onRecommendation(route);
         setStep('result');
       } catch (err) {
@@ -167,10 +169,31 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
     setSymptoms(null);
     setTriageResult(null);
     setRouteResult(null);
+    setActiveRouteId(null);
     setUserCoords(null);
     setError(null);
     onRecommendation(null);
   };
+
+  const handleShowRoute = useCallback(
+    (scored: import('@/lib/clearpath/types').ScoredHospital) => {
+      if (!routeResult) return;
+      const hId = scored.hospital?.id ?? scored.hospital?._id ?? null;
+      setActiveRouteId(hId);
+      const swapped = {
+        ...routeResult,
+        recommended: scored,
+        alternatives: [
+          routeResult.recommended,
+          ...routeResult.alternatives.filter(
+            (a: any) => (a.hospital?.id ?? a.hospital?._id) !== hId
+          ),
+        ],
+      };
+      onRecommendation(swapped);
+    },
+    [routeResult, onRecommendation]
+  );
 
   const canStart = postalCode.trim().length > 0 || userCoords !== null;
 
@@ -271,6 +294,8 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
           recommended={routeResult.recommended}
           alternatives={routeResult.alternatives}
           onBack={resetFlow}
+          onShowRoute={handleShowRoute}
+          activeRouteId={activeRouteId}
         />
       )}
 
