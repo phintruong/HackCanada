@@ -463,6 +463,57 @@ body {
   .lp-footer a:hover {
     color: #1a1611;
   }
+
+  /* Map 3D page (hero-style consistency) */
+  .map-3d-page {
+    color: #1a1611;
+  }
+
+  .map-3d-nav {
+    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+  }
+
+  .map-3d-city-selector {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(14px);
+    border-radius: 50px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04), 0 8px 30px rgba(0, 0, 0, 0.06);
+  }
+
+  .map-3d-city-btn {
+    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    letter-spacing: 0.02em;
+  }
+
+  .map-3d-city-btn--active {
+    border: none;
+  }
+
+  .map-3d-loading {
+    font-family: var(--font-archivo), sans-serif;
+  }
+
+  .map-3d-popup {
+    font-family: var(--font-archivo), sans-serif;
+    min-width: 180px;
+    padding: 0.5rem 0;
+  }
+
+  .map-3d-popup-title {
+    font-family: var(--font-playfair), "Playfair Display", Georgia, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #1a1611;
+    margin: 0 0 0.5rem;
+  }
+
+  .map-3d-popup-meta {
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #8a8279;
+    margin: 0 0 0.25rem;
+  }
 }
 
 @keyframes lpFadeUp {
