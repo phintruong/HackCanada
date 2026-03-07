@@ -1,4 +1,5 @@
 import { RouteResponse } from './types';
+import { getHospitalId } from './hospitalId';
 
 function haversine(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
@@ -22,7 +23,7 @@ export function recommendHospital(
   const withDist = hospitals.map(h => ({
     ...h,
     distanceKm: haversine(userLat, userLng, h.latitude, h.longitude),
-    occupancy: loadMap[h._id.toString()] ?? 70
+    occupancy: loadMap[getHospitalId(h)] ?? 70
   }));
 
   let chosen: any;
@@ -42,10 +43,11 @@ export function recommendHospital(
     reason = 'Least congested ER within 30km — your condition is non-urgent.';
   }
 
-  const snap = snapshots.find((s: any) => s.hospitalId === chosen._id.toString());
+  const chosenId = chosen ? getHospitalId(chosen) : '';
+  const snap = snapshots.find((s: any) => s.hospitalId === chosenId);
   return {
     hospital: chosen,
-    distanceKm: Math.round(chosen.distanceKm * 10) / 10,
+    distanceKm: chosen ? Math.round(chosen.distanceKm * 10) / 10 : 0,
     waitMinutes: snap?.waitMinutes ?? 0,
     reason
   };

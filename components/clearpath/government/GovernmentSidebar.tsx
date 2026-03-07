@@ -4,23 +4,32 @@ import { useState, useEffect, useCallback } from 'react';
 import CapacitySlider from './CapacitySlider';
 import ProposedHospitalPin from './ProposedHospitalPin';
 import SimulationResultPanel from './SimulationResultPanel';
+import { SCENARIO_OPTIONS } from '@/lib/clearpath/scenarios';
+import type { ClearPathScenario } from '@/lib/clearpath/types';
 
 interface GovernmentSidebarProps {
+  city: string;
+  scenario: ClearPathScenario;
+  onScenarioChange: (s: ClearPathScenario) => void;
   onSimulationResult: (result: any) => void;
 }
 
-export default function GovernmentSidebar({ onSimulationResult }: GovernmentSidebarProps) {
+export default function GovernmentSidebar({
+  city,
+  scenario,
+  onScenarioChange,
+  onSimulationResult,
+}: GovernmentSidebarProps) {
   const [proposedLocation, setProposedLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [capacity, setCapacity] = useState(100);
   const [simResult, setSimResult] = useState<any>(null);
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [city] = useState('toronto');
 
   useEffect(() => {
     fetch(`/api/clearpath/hospitals?city=${city}`)
-      .then(r => r.json())
-      .then(setHospitals)
+      .then((r) => r.json())
+      .then((data) => setHospitals(Array.isArray(data) ? data : (data.hospitals ?? [])))
       .catch(console.error);
   }, [city]);
 
@@ -42,6 +51,7 @@ export default function GovernmentSidebar({ onSimulationResult }: GovernmentSide
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city,
+          scenario,
           proposedLat: proposedLocation.lat,
           proposedLng: proposedLocation.lng,
           proposedCapacity: capacity,
@@ -55,7 +65,7 @@ export default function GovernmentSidebar({ onSimulationResult }: GovernmentSide
     } finally {
       setLoading(false);
     }
-  }, [proposedLocation, capacity, city, onSimulationResult]);
+  }, [proposedLocation, capacity, city, scenario, onSimulationResult]);
 
   return (
     <div className="h-full bg-white/95 backdrop-blur-md shadow-2xl border-r border-slate-200 p-5 overflow-y-auto">
@@ -69,6 +79,22 @@ export default function GovernmentSidebar({ onSimulationResult }: GovernmentSide
       </div>
 
       <div className="space-y-5">
+        <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+          <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Scenario
+          </h3>
+          <select
+            value={scenario}
+            onChange={(e) => onScenarioChange(e.target.value as ClearPathScenario)}
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          >
+            {SCENARIO_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
           <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
             1. Place Proposed ER

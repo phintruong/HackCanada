@@ -1,19 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { recommendHospital } from '@/lib/clearpath/routingService';
-import { getDb } from '@/lib/clearpath/mongoClient';
+import { getHospitals, getCongestion } from '@/lib/clearpath/dataSource';
 import { RouteRequest } from '@/lib/clearpath/types';
 
 export async function POST(req: NextRequest) {
   const body: RouteRequest = await req.json();
-  const db = await getDb();
-
-  const hospitals = await db.collection('hospitals')
-    .find({ city: body.city }).toArray();
-  const snapshots = await db.collection('congestion_snapshots')
-    .find({}).sort({ recordedAt: -1 }).toArray();
+  const [{ data: hospitals }, { data: snapshots, source }] = await Promise.all([
+    getHospitals(body.city),
+    getCongestion(body.city),
+  ]);
 
   const recommendation = recommendHospital(
     body.userLat, body.userLng, body.severity, hospitals, snapshots
   );
-  return NextResponse.json(recommendation);
+  return NextResponse.json({ ...recommendation, source });
 }
