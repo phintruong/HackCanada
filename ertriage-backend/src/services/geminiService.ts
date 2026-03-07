@@ -15,11 +15,7 @@ Explanation must be plain language, max 3 sentences.
 Always include: 'This is guidance only. See a doctor for diagnosis.'
 `;
 
-function buildPrompt(
-  vitals: VitalsPayload,
-  symptoms: SymptomsPayload,
-  memberContext: string
-): string {
+function buildPrompt(vitals: VitalsPayload, symptoms: SymptomsPayload): string {
   return `
 Patient Vitals:
 - Heart Rate: ${vitals.heartRate} bpm
@@ -35,19 +31,13 @@ Symptom Answers:
 - Severe headache or confusion: ${symptoms.severeHeadache}
 - Injury or bleeding: ${symptoms.injuryOrBleeding}
 
-${memberContext ? `Additional Context:\n${memberContext}` : ''}
-
 Classify this patient's urgency level.
 `;
 }
 
-export async function classifyTriage(
-  vitals: VitalsPayload,
-  symptoms: SymptomsPayload,
-  memberContext: string = ''
-) {
+export async function classifyTriage(vitals: VitalsPayload, symptoms: SymptomsPayload) {
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-  const prompt = buildPrompt(vitals, symptoms, memberContext);
+  const prompt = buildPrompt(vitals, symptoms);
 
   const result = await model.generateContent([SYSTEM_PROMPT, prompt]);
   const text = result.response.text();

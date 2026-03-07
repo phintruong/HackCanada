@@ -1,6 +1,4 @@
-import { auth } from 'express-oauth2-jwt-bearer';
+import { RequestHandler } from 'express';
 
-export const requireAuth = auth({
-  audience: process.env.AUTH0_AUDIENCE,
-  issuerBaseURL: process.env.AUTH0_ISSUER_BASE_URL,
-});
+// Auth middleware stub — passes all requests through
+export const requireAuth: RequestHandler = (_req, _res, next) => next();

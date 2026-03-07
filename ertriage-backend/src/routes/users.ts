@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth } from '../middleware/auth';
 import { getUserByAuth0Id, createUser, updateUser } from '../db/queries';
 
 export const usersRouter = Router();
 
-usersRouter.get('/:id', requireAuth, async (req: Request, res: Response) => {
+usersRouter.get('/:id', async (req: Request, res: Response) => {
   try {
     const user = await getUserByAuth0Id(req.params.id);
     if (!user) {
@@ -17,7 +16,7 @@ usersRouter.get('/:id', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-usersRouter.patch('/:id', requireAuth, async (req: Request, res: Response) => {
+usersRouter.patch('/:id', async (req: Request, res: Response) => {
   try {
     const updated = await updateUser(req.params.id, req.body);
     res.json(updated);

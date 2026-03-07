@@ -10,7 +10,6 @@ import { clinicsRouter } from './routes/clinics';
 import { usersRouter } from './routes/users';
 import { familyRouter } from './routes/family';
 import { historyRouter } from './routes/history';
-import { agentsRouter } from './routes/agents';
 import { errorHandler } from './middleware/errorHandler';
 import { checkRedis } from './cache/redis';
 
@@ -28,7 +27,6 @@ app.use('/clinics', clinicsRouter);
 app.use('/users', usersRouter);
 app.use('/family', familyRouter);
 app.use('/history', historyRouter);
-app.use('/agents', agentsRouter);
 
 // Health check
 app.get('/health', (_req, res) => {

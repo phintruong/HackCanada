@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth } from '../middleware/auth';
 import { getFamilyMembers, createFamilyMember, deleteFamilyMember } from '../db/queries';
 
 export const familyRouter = Router();
 
-familyRouter.get('/:userId', requireAuth, async (req: Request, res: Response) => {
+familyRouter.get('/:userId', async (req: Request, res: Response) => {
   try {
     const members = await getFamilyMembers(req.params.userId);
     res.json(members);
@@ -14,7 +13,7 @@ familyRouter.get('/:userId', requireAuth, async (req: Request, res: Response) =>
   }
 });
 
-familyRouter.post('/', requireAuth, async (req: Request, res: Response) => {
+familyRouter.post('/', async (req: Request, res: Response) => {
   try {
     const { userId, name, dob, relation, notes } = req.body;
     const member = await createFamilyMember(userId, name, dob, relation, notes);
@@ -25,7 +24,7 @@ familyRouter.post('/', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
-familyRouter.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+familyRouter.delete('/:id', async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;
     await deleteFamilyMember(req.params.id, userId);

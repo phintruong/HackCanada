@@ -1,10 +1,9 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth } from '../middleware/auth';
 import { getTriageHistory } from '../db/queries';
 
 export const historyRouter = Router();
 
-historyRouter.get('/:userId', requireAuth, async (req: Request, res: Response) => {
+historyRouter.get('/:userId', async (req: Request, res: Response) => {
   try {
     const history = await getTriageHistory(req.params.userId);
     res.json(history);

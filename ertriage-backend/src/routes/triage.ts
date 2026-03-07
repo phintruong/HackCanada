@@ -1,22 +1,16 @@
 import { Router, Request, Response } from 'express';
-import { requireAuth } from '../middleware/auth';
 import { triageLimiter } from '../middleware/rateLimit';
 import { classifyTriage } from '../services/geminiService';
-import { getBackboardContext } from '../services/backboardService';
-import { createTriageSession } from '../db/queries';
 import { TriageRequest } from '../../../shared/types';
 
 export const triageRouter = Router();
 
-triageRouter.post('/', requireAuth, triageLimiter, async (req: Request, res: Response) => {
+triageRouter.post('/', triageLimiter, async (req: Request, res: Response) => {
   try {
     const { vitals, symptoms, city, memberId } = req.body as TriageRequest;
 
-    // Get Backboard multi-agent context
-    const agentContext = await getBackboardContext(vitals, symptoms, memberId);
-
     // Classify with Gemini
-    const result = await classifyTriage(vitals, symptoms, agentContext);
+    const result = await classifyTriage(vitals, symptoms);
 
     // TODO: fetch wait time and nearby clinics
 
