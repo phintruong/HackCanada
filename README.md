@@ -10,13 +10,11 @@ A cross-platform triage guidance app for Canadians. Uses camera-based vitals, st
 |-------|-----------|
 | Frontend | React Native (Expo), TypeScript, React Native Web |
 | Backend | Node.js, Express, TypeScript |
-| Database | PostgreSQL + Redis (caching) |
+| Database | PostgreSQL |
 | AI | Gemini 1.5 Flash (Google Generative AI) |
 | Vitals | Presage SmartSpectra SDK |
 | Maps | Mapbox (geocoding + Places API) |
 | State | Zustand |
-| i18n | react-i18next (EN + FR) |
-| Rate Limiting | express-rate-limit |
 
 ## Project Structure
 
@@ -29,23 +27,20 @@ HackCanada/
 │       ├── routes/      # API endpoints
 │       ├── services/    # Gemini, Presage, Mapbox, wait times
 │       ├── middleware/  # Rate limiting, error handling
-│       ├── db/          # PostgreSQL schema + queries
-│       └── cache/       # Redis client
+│       └── db/          # PostgreSQL schema + queries
 └── ertriage-frontend/   # Expo (React Native + Web) app
     └── src/
         ├── screens/     # Home, Vitals, Symptoms, Result, History, Family, etc.
         ├── components/  # VitalsMeter, RiskBadge, ResponsiveContainer, etc.
         ├── hooks/       # useResponsive (breakpoints + responsive helpers)
         ├── api/         # API client functions
-        ├── store/       # Zustand global state
-        └── i18n/        # EN + FR translations
+        └── store/       # Zustand global state
 ```
 
 ## Prerequisites
 
 - Node.js 18+
 - PostgreSQL 15+
-- Redis 7+
 - Expo CLI (`npm install -g expo-cli`)
 
 ## Setup
@@ -75,7 +70,6 @@ Edit each `.env` file and fill in your keys:
 |----------|-------------|
 | `PORT` | Server port (default: 3001) |
 | `DATABASE_URL` | PostgreSQL connection string |
-| `REDIS_URL` | Redis connection string |
 | `GEMINI_API_KEY` | Google Gemini API key |
 | `PRESAGE_API_KEY` | Presage SmartSpectra key |
 | `MAPBOX_SECRET_TOKEN` | Mapbox secret token |
@@ -147,8 +141,8 @@ All 9 screens use `ResponsiveContainer` so content is constrained and centered o
 
 | Role | Scope |
 |------|-------|
-| Frontend Team | React Native screens, Presage SDK, Mapbox GL, Zustand, i18n, responsive layout |
-| Backend Team | Express API, PostgreSQL, Redis, Gemini, Mapbox Places, Vultr deployment |
+| Frontend Team | React Native screens, Presage SDK, Mapbox GL, Zustand, responsive layout |
+| Backend Team | Express API, PostgreSQL, Gemini, Mapbox Places, Vultr deployment |
 
 ## License
 

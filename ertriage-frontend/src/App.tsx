@@ -18,7 +18,7 @@ import FamilyScreen from './screens/FamilyScreen';
 import BookingScreen from './screens/BookingScreen';
 import OHIPScreen from './screens/OHIPScreen';
 import SettingsScreen from './screens/SettingsScreen';
-import './i18n';
+
 
 export type RootStackParamList = {
   Home: undefined;

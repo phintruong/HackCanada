@@ -16,7 +16,7 @@ ER Triage E-Clip is a cross-platform triage guidance application targeting both 
 | AI Stack | Gemini 1.5 Flash for classification |
 | Vitals | Presage SmartSpectra SDK — heart rate, respiratory rate, stress from front camera |
 | Backend | Node.js + Express, hosted on Vultr |
-| Database | PostgreSQL (user data, triage history) + Redis (caching, sessions) |
+| Database | PostgreSQL (user data, triage history) |
 
 ---
 
@@ -30,7 +30,7 @@ The system is split into two clearly separated layers: a frontend (React / React
 ┌─────────────────────────────────────────────────────────┐
 │                      FRONTEND                           │
 │   React Native (Web + iOS + Android via Expo)           │
-│   Presage SDK  ·  Mapbox GL  ·  Zustand  ·  i18next    │
+│   Presage SDK  ·  Mapbox GL  ·  Zustand                │
 │   ResponsiveContainer (mobile/tablet/desktop)           │
 └───────────────────────┬─────────────────────────────────┘
                         │ HTTPS / REST
@@ -39,12 +39,11 @@ The system is split into two clearly separated layers: a frontend (React / React
 │   Node.js + Express API                                 │
 │   ├── /triage     → Gemini API                          │
 │   ├── /vitals     → Presage validation                  │
-│   ├── /waittimes  → CIHI / Fraser data cache            │
+│   ├── /waittimes  → Mock data (CIHI later)              │
 │   ├── /clinics    → Mapbox Places API                   │
 │   ├── /users      → PostgreSQL                          │
 │   ├── /family     → PostgreSQL                          │
 │   └── /history    → PostgreSQL                          │
-│   Redis (wait time cache)                               │
 │   PostgreSQL (users · sessions · triage history)        │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -63,7 +62,7 @@ ertriage-frontend/
 │   │   ├── FamilyScreen.tsx        # Family profile management
 │   │   ├── BookingScreen.tsx       # Clinic / doctor booking
 │   │   ├── OHIPScreen.tsx          # Insurance guidance
-│   │   └── SettingsScreen.tsx      # Language, notifications
+│   │   └── SettingsScreen.tsx      # Notifications
 │   ├── components/
 │   │   ├── ResponsiveContainer.tsx # Responsive layout wrapper
 │   │   ├── VitalsMeter.tsx         # Live HR / RR / stress display
@@ -81,7 +80,6 @@ ertriage-frontend/
 │   │   ├── clinics.ts              # GET /clinics
 │   │   └── user.ts                 # Profile + history calls
 │   ├── store/                      # Zustand global state
-│   ├── i18n/                       # EN / FR language files
 │   └── App.tsx
 └── package.json
 ```
@@ -102,19 +100,14 @@ ertriage-backend/
 │   ├── services/
 │   │   ├── geminiService.ts        # Gemini API calls
 │   │   ├── presageService.ts       # Presage validation
-│   │   ├── waitTimeService.ts      # CIHI data fetch + cache
-│   │   ├── mapboxService.ts        # Clinic lookup
-│   │   └── notificationService.ts  # Push notifications (Phase 2)
+│   │   ├── waitTimeService.ts      # Mock wait times (CIHI later)
+│   │   └── mapboxService.ts        # Clinic lookup
 │   ├── middleware/
-│   │   ├── auth.ts                 # Auth stub (passthrough)
 │   │   ├── rateLimit.ts            # Rate limiting
 │   │   └── errorHandler.ts
 │   ├── db/
 │   │   ├── schema.sql              # PostgreSQL schema
-│   │   ├── migrations/
 │   │   └── queries.ts              # Typed DB queries
-│   ├── cache/
-│   │   └── redis.ts                # Redis client + helpers
 │   └── index.ts                    # Express entry point
 ├── .env
 └── package.json
@@ -124,7 +117,7 @@ ertriage-backend/
 
 ## 3. Database Schema
 
-PostgreSQL handles all persistent data. Redis handles wait time caching (refreshed every 30 minutes).
+PostgreSQL handles all persistent data.
 
 ```sql
 -- Users
@@ -181,7 +174,7 @@ CREATE TABLE bookings (
 |--------|----------|-------|--------|
 | POST | `/triage` | Vitals + symptoms JSON | Risk level, recommendation, Gemini explanation |
 | POST | `/vitals/validate` | Raw Presage payload | Validated + normalized vitals object |
-| GET | `/waittimes/:city` | City name | Estimated ER wait time string from cache |
+| GET | `/waittimes/:city` | City name | Estimated ER wait time string |
 | GET | `/clinics/:lat/:lng` | Coordinates | Nearest urgent care + virtual care options |
 | GET | `/users/:id` | User ID | User profile |
 | PATCH | `/users/:id` | Updated fields | Updated user profile |
@@ -213,29 +206,25 @@ CREATE TABLE bookings (
   - **Yellow**: urgent care clinic today
   - **Red**: go to ER now / call 911
 - Plain-language explanation of why the recommendation was made
-- ER wait time estimate for user's city using CIHI data cache
+- ER wait time estimate for user's city (mock data for MVP)
 - Nearest clinic map via Mapbox — urgent care + virtual care options
 
 ### 5.2 Symptom History & Health Trends
 
 - All triage sessions saved to user's history automatically
 - Timeline view of past sessions — date, symptoms, outcome
-- Trend chart: frequency of triage checks over time
 - Flag patterns — e.g. repeated chest pain checks trigger a gentle nudge to see a GP
-- Export history as PDF for sharing with a doctor
 
 ### 5.3 Family Profiles
 
 - Add family members with name, date of birth, relationship, and health notes
 - Run a triage check on behalf of a family member — history stored under their profile
 - Chronic condition notes per member — fed into Gemini prompt for context
-- Age-aware triage — Gemini prompt adjusts thresholds for children and elderly
 
 ### 5.4 Doctor & Clinic Booking Integration
 
 - After triage, surface nearby clinics from Mapbox with distance and hours
 - Direct link to clinic's booking page or phone number
-- Phase 2: integrate with Maple and Teladoc APIs for in-app virtual visit booking
 - Booking saved to user history with status tracking (pending / confirmed / completed)
 
 ### 5.5 OHIP & Insurance Guidance
@@ -244,14 +233,7 @@ CREATE TABLE bookings (
 - Explains what provincial insurance covers for ER visits, urgent care, virtual care
 - Flags services that are NOT covered — e.g. ambulance fees, some virtual platforms
 
-### 5.6 Multi-Language Support
-
-- English and French at launch (bilingual Canada requirement)
-- Punjabi, Mandarin, Arabic in Phase 2 — targeting major immigrant communities
-- i18n via react-i18next — all strings externalized from day one
-- Language persisted in user profile and applied across all screens
-
-### 5.7 Responsive Design
+### 5.6 Responsive Design
 
 - All screens use `ResponsiveContainer` wrapper for cross-platform layout
 - `useResponsive` hook provides breakpoints: mobile (<768), tablet (768-1023), desktop (1024+)
@@ -260,7 +242,7 @@ CREATE TABLE bookings (
 - Cursor pointer support on web for all interactive elements
 - Mobile layout unchanged — responsive only adds constraints on larger screens
 
-### 5.8 B2B Operator Dashboard (Phase 3)
+### 5.7 B2B Operator Dashboard (Future)
 
 - Hospital and clinic accounts can access an analytics dashboard
 - Aggregate triage volume by risk tier — helps predict ER surge
@@ -279,8 +261,6 @@ Handles camera-based vitals. The most technically risky integration — validate
 - Requires front camera permission — request on VitalsScreen mount
 - Returns: `{ heartRate, respiratoryRate, stressIndex, emotionState }`
 - Fallback: if Presage fails or user denies camera, show manual input fields for HR and symptoms only
-
-**Health Check**: On app load, call Presage SDK `.initialize()` and verify a non-null token is returned. If it fails, set a global `presageFailed` flag and render the manual input fallback silently.
 
 ```typescript
 // presageService.ts — backend validation
@@ -301,7 +281,6 @@ Core triage classification engine. Takes normalized vitals + symptom answers and
 - Response format: `{ riskLevel: 'green'|'yellow'|'red', recommendation: string, explanation: string }`
 
 ```typescript
-// geminiService.ts
 const SYSTEM_PROMPT = `
 You are a Canadian triage guidance assistant. You are NOT a doctor.
 Given patient vitals and symptom answers, classify urgency into one of:
@@ -315,35 +294,13 @@ Always include: 'This is guidance only. See a doctor for diagnosis.'
 `;
 ```
 
-**Health Check**: On backend startup, send a test payload to Gemini with known inputs and assert `riskLevel` is present in the response.
-
 ### 6.3 Mapbox
 
-Used for location-based clinic lookup and the QR code destination for B2B deployments.
+Used for location-based clinic lookup.
 
 - Geocode user's postal code → coordinates on triage session start
 - Query Mapbox Places API for nearest: urgent care clinics, ERs, pharmacies
 - Display results as a card list with distance and hours
-- Full Mapbox GL map shown only on the web version for B2B operator dashboard
-
-**Health Check**: On backend start, run a test geocode call for 'Kitchener, ON' and assert a valid coordinate pair is returned.
-
-### 6.4 Redis Cache
-
-Two primary uses: ER wait time data (expensive to fetch, changes slowly) and health check status.
-
-```typescript
-// cache/redis.ts
-export async function getWaitTime(city: string): Promise<string | null> {
-  return redis.get(`waittime:${city.toLowerCase()}`);
-}
-
-export async function setWaitTime(city: string, value: string) {
-  await redis.set(`waittime:${city.toLowerCase()}`, value, { EX: 1800 }); // 30 min
-}
-```
-
-**Health Check**: On startup, call `redis.ping()` and assert 'PONG'. If Redis is down, the app still works — fall back to direct API calls.
 
 ---
 
@@ -351,8 +308,8 @@ export async function setWaitTime(city: string, value: string) {
 
 | Team | Owns |
 |------|------|
-| Frontend Team | React Native (Web + iOS + Android via Expo), Presage SDK, Mapbox GL, Zustand state, i18n, responsive layout, all screens and components |
-| Backend Team | Node.js + Express, PostgreSQL, Redis, Gemini API, Presage validation, Mapbox Places, Vultr deployment |
+| Frontend Team | React Native (Web + iOS + Android via Expo), Presage SDK, Mapbox GL, Zustand state, responsive layout, all screens and components |
+| Backend Team | Node.js + Express, PostgreSQL, Gemini API, Presage validation, Mapbox Places, Vultr deployment |
 | Shared Contract | API types defined in a shared `/types` folder — both sides import the same TypeScript interfaces |
 | Communication | Frontend calls backend only via the `/api` routes. No frontend component ever directly calls Gemini or Presage backend — all goes through the API |
 
@@ -402,7 +359,6 @@ export interface TriageResponse {
 # Backend .env
 PORT=3001
 DATABASE_URL=postgresql://user:pass@localhost:5432/ertriage
-REDIS_URL=redis://localhost:6379
 GEMINI_API_KEY=your_key_here
 PRESAGE_API_KEY=your_key_here
 MAPBOX_SECRET_TOKEN=your_key_here
@@ -419,11 +375,10 @@ EXPO_PUBLIC_PRESAGE_KEY=your_key_here
 
 | Phase | Deliverables |
 |-------|-------------|
-| Hackathon MVP | Core triage flow, Presage vitals, Gemini classification, live wait times, Mapbox clinic lookup, responsive web + mobile, EN/FR |
+| Hackathon MVP | Core triage flow, Presage vitals, Gemini classification, mock wait times, Mapbox clinic lookup, responsive web + mobile |
 | Month 1 | Full iOS + Android builds, family profiles, symptom history, push notifications |
-| Month 2 | Doctor booking integration (Maple / Teladoc APIs), OHIP guidance module |
-| Month 3 | B2B operator dashboard, QR code generator, aggregate analytics |
-| Month 4 | Additional languages (Punjabi, Mandarin, Arabic), wearable integration research |
+| Month 2 | Doctor booking integration (Maple / Teladoc APIs), OHIP guidance module, CIHI wait time data |
+| Month 3 | B2B operator dashboard, QR code generator, aggregate analytics, multi-language (FR, Punjabi, Mandarin, Arabic) |
 | Long Term | Provincial licensing, integration with provincial health card systems, white-label for hospital chains |
 
 ---

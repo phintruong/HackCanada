@@ -11,7 +11,6 @@ import { usersRouter } from './routes/users';
 import { familyRouter } from './routes/family';
 import { historyRouter } from './routes/history';
 import { errorHandler } from './middleware/errorHandler';
-import { checkRedis } from './cache/redis';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -36,16 +35,6 @@ app.get('/health', (_req, res) => {
 // Error handler
 app.use(errorHandler);
 
-async function startup() {
-  // Health checks
-  await checkRedis();
-
-  app.listen(PORT, () => {
-    console.log(`ER Triage API running on port ${PORT}`);
-  });
-}
-
-startup().catch((err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
+app.listen(PORT, () => {
+  console.log(`ER Triage API running on port ${PORT}`);
 });
