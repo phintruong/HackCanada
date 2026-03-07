@@ -109,7 +109,7 @@ export function ExportBar({ sceneRef }: ExportBarProps) {
           <button
             onClick={handleExportToMap}
             disabled={exportingToMap}
-            className="px-5 py-2.5 rounded-full font-medium text-sm border-2 bg-gradient-to-r from-orange-500 to-amber-500 border-orange-400 text-white hover:from-orange-600 hover:to-amber-600 hover:shadow-[0_8px_25px_-5px_rgba(249,115,22,0.5)] hover:-translate-y-0.5 active:translate-y-0 disabled:from-gray-600 disabled:to-gray-600 disabled:border-gray-500 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200 ease-out"
+            className="px-5 py-2.5 rounded-full font-medium text-sm border-2 bg-blue-500 border-blue-400 text-white hover:bg-blue-600 hover:shadow-[0_8px_25px_-5px_rgba(59,130,246,0.35)] hover:-translate-y-0.5 active:translate-y-0 disabled:from-gray-600 disabled:to-gray-600 disabled:border-gray-500 disabled:text-gray-400 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200 ease-out"
           >
             {exportingToMap ? 'Exporting...' : 'Export to Map →'}
           </button>

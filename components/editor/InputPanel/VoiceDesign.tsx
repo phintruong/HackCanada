@@ -177,7 +177,7 @@ export function VoiceDesign() {
       case 'listening':
         return 'ring-4 ring-blue-400/50 animate-pulse';
       case 'designing':
-        return 'ring-4 ring-amber-400/50 animate-pulse';
+        return 'ring-4 ring-violet-400/50 animate-pulse';
       case 'speaking':
         return 'ring-4 ring-green-400/50';
       default:
@@ -190,7 +190,7 @@ export function VoiceDesign() {
       case 'listening':
         return 'bg-blue-500 text-white';
       case 'designing':
-        return 'bg-amber-500 text-white';
+        return 'bg-violet-500 text-white';
       case 'speaking':
         return 'bg-green-500 text-white';
       case 'error':

@@ -53,7 +53,7 @@ export function BuildingList() {
           <button
             onClick={handleAddBuilding}
             disabled={placementMode || mergeMode}
-            className="px-4 py-2 rounded-full font-medium text-sm border-2 bg-gray-100 border-amber-400/60 text-amber-700 hover:bg-amber-500 hover:border-amber-400 hover:text-white hover:shadow-[0_8px_25px_-5px_rgba(245,158,11,0.5)] hover:-translate-y-0.5 active:translate-y-0 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200 ease-out"
+            className="px-4 py-2 rounded-full font-medium text-sm border-2 bg-gray-100 border-blue-400/60 text-blue-700 hover:bg-blue-500 hover:border-blue-400 hover:text-white hover:shadow-[0_8px_25px_-5px_rgba(59,130,246,0.5)] hover:-translate-y-0.5 active:translate-y-0 disabled:bg-gray-100 disabled:border-gray-300 disabled:text-gray-500 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none transition-all duration-200 ease-out"
           >
             {placementMode ? 'Click Grid...' : '+ Add'}
           </button>
@@ -92,8 +92,8 @@ export function BuildingList() {
                 ${isSelected
                   ? mergeMode
                     ? 'border-purple-400 bg-purple-50'
-                    : 'border-amber-400 bg-amber-50 shadow-[0_2px_10px_-2px_rgba(245,158,11,0.3)]'
-                  : 'border-gray-200 bg-white hover:border-amber-400/60'
+                    : 'border-blue-400 bg-blue-50 shadow-[0_2px_10px_-2px_rgba(59,130,246,0.3)]'
+                  : 'border-gray-200 bg-white hover:border-blue-400/60'
                 }
               `}
               onClick={() => handleBuildingClick(building.id)}
@@ -175,10 +175,10 @@ export function BuildingList() {
       </div>
 
       {placementMode && (
-        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
           <div className="flex items-start gap-2">
             <svg
-              className="w-5 h-5 text-amber-600 mt-0.5 shrink-0"
+              className="w-5 h-5 text-blue-600 mt-0.5 shrink-0"
               fill="currentColor"
               viewBox="0 0 20 20"
             >
@@ -189,13 +189,13 @@ export function BuildingList() {
               />
             </svg>
             <div className="flex-1">
-              <p className="text-sm text-amber-900 font-medium">Placement Mode Active</p>
-              <p className="text-xs text-amber-700 mt-1">
+              <p className="text-sm text-blue-900 font-medium">Placement Mode Active</p>
+              <p className="text-xs text-blue-700 mt-1">
                 Click anywhere on the grid to place the new building
               </p>
               <button
                 onClick={() => setPlacementMode(false)}
-                className="mt-2 px-3 py-1.5 rounded-full text-xs font-medium border-2 border-amber-400/60 text-amber-700 hover:bg-amber-500 hover:border-amber-400 hover:text-white hover:shadow-[0_4px_15px_-3px_rgba(245,158,11,0.4)] transition-all duration-200 ease-out"
+                className="mt-2 px-3 py-1.5 rounded-full text-xs font-medium border-2 border-blue-400/60 text-blue-700 hover:bg-blue-500 hover:border-blue-400 hover:text-white hover:shadow-[0_4px_15px_-3px_rgba(59,130,246,0.4)] transition-all duration-200 ease-out"
               >
                 Cancel
               </button>

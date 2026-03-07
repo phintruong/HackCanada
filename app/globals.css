@@ -193,7 +193,6 @@ body {
     line-height: 1;
     letter-spacing: -0.01em;
     color: #dc2626;
-    animation: goldShimmer 6s ease-in-out infinite;
   }
 
   /* CTA button */
@@ -439,15 +438,6 @@ body {
   }
 }
 
-@keyframes goldShimmer {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-}
 
 @media (max-width: 768px) {
   .lp-hero-wrap {

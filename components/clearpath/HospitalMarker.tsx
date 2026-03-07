@@ -25,8 +25,7 @@ export default function HospitalMarker({ name, occupancyPct, waitMinutes, isReco
           width: 40,
           height: 40,
           backgroundColor: color,
-          boxShadow: `0 0 0 0 ${color}`,
-          animation: isRecommended ? undefined : 'pulse-ring 2s infinite',
+          boxShadow: `0 1px 4px ${color}80`,
         }}
       >
         <span className="text-white text-xs font-bold">{Math.round(occupancyPct)}%</span>
@@ -37,13 +36,6 @@ export default function HospitalMarker({ name, occupancyPct, waitMinutes, isReco
       <div className="text-[9px] text-slate-500 font-medium">
         ~{waitMinutes} min wait
       </div>
-      <style jsx>{`
-        @keyframes pulse-ring {
-          0% { box-shadow: 0 0 0 0 ${color}80; }
-          70% { box-shadow: 0 0 0 12px ${color}00; }
-          100% { box-shadow: 0 0 0 0 ${color}00; }
-        }
-      `}</style>
     </div>
   );
 }

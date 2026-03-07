@@ -129,7 +129,7 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
 
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">
-          Width (meters): <span className="text-amber-600">{spec.width}</span>
+          Width (meters): <span className="text-blue-600">{spec.width}</span>
           {maxWidth < 50 && <span className="text-orange-500 text-xs ml-2">(max: {maxWidth.toFixed(1)}m)</span>}
         </label>
         <div className="flex items-center gap-3">
@@ -140,7 +140,7 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
             step="0.5"
             value={Math.min(spec.width, maxWidth)}
             onChange={(e) => { onUpdate({ width: parseFloat(e.target.value) }); playSound('resize_object'); }}
-            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-amber-400 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-amber-300 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
+            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
           />
           <input
             type="number"
@@ -153,14 +153,14 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
               onUpdate({ width: Math.min(val, maxWidth) });
               playSound('resize_object');
             }}
-            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-amber-400 focus:outline-none transition-colors duration-200"
+            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-blue-400 focus:outline-none transition-colors duration-200"
           />
         </div>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">
-          Depth (meters): <span className="text-amber-600">{spec.depth}</span>
+          Depth (meters): <span className="text-blue-600">{spec.depth}</span>
           {maxDepth < 50 && <span className="text-orange-500 text-xs ml-2">(max: {maxDepth.toFixed(1)}m)</span>}
         </label>
         <div className="flex items-center gap-3">
@@ -171,7 +171,7 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
             step="0.5"
             value={Math.min(spec.depth, maxDepth)}
             onChange={(e) => { onUpdate({ depth: parseFloat(e.target.value) }); playSound('resize_object'); }}
-            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-amber-400 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-amber-300 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
+            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
           />
           <input
             type="number"
@@ -184,14 +184,14 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
               onUpdate({ depth: Math.min(val, maxDepth) });
               playSound('resize_object');
             }}
-            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-amber-400 focus:outline-none transition-colors duration-200"
+            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-blue-400 focus:outline-none transition-colors duration-200"
           />
         </div>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">
-          Number of Floors: <span className="text-amber-600">{spec.numberOfFloors}</span>
+          Number of Floors: <span className="text-blue-600">{spec.numberOfFloors}</span>
           {hasBuildingAbove && maxFloors < 20 && <span className="text-orange-500 text-xs ml-2">(max: {maxFloors})</span>}
         </label>
         <div className="flex items-center gap-3">
@@ -202,7 +202,7 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
             step="1"
             value={Math.min(spec.numberOfFloors, maxFloors)}
             onChange={(e) => { onUpdate({ numberOfFloors: parseInt(e.target.value) }); playSound('add_floor'); }}
-            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-amber-400 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-amber-300 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
+            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
           />
           <input
             type="number"
@@ -215,14 +215,14 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
               onUpdate({ numberOfFloors: Math.min(val, maxFloors) });
               playSound('add_floor');
             }}
-            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-amber-400 focus:outline-none transition-colors duration-200"
+            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-blue-400 focus:outline-none transition-colors duration-200"
           />
         </div>
       </div>
 
       <div className="space-y-2">
         <label className="block text-sm font-semibold text-gray-700">
-          Floor Height (meters): <span className="text-amber-600">{spec.floorHeight}</span>
+          Floor Height (meters): <span className="text-blue-600">{spec.floorHeight}</span>
           {hasBuildingAbove && maxFloorHeight < 6 && <span className="text-orange-500 text-xs ml-2">(max: {maxFloorHeight.toFixed(1)}m)</span>}
         </label>
         <div className="flex items-center gap-3">
@@ -233,7 +233,7 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
             step="0.1"
             value={Math.min(spec.floorHeight, maxFloorHeight)}
             onChange={(e) => { onUpdate({ floorHeight: parseFloat(e.target.value) }); playSound('resize_object'); }}
-            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-amber-400 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-400 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-amber-300 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
+            className="flex-4 h-4 bg-gray-200 rounded-full appearance-none cursor-pointer accent-blue-500 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-12 [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-blue-500 [&::-webkit-slider-thumb]:border-2 [&::-webkit-slider-thumb]:border-blue-400 [&::-webkit-slider-thumb]:cursor-grab [&::-webkit-slider-thumb]:active:cursor-grabbing"
           />
           <input
             type="number"
@@ -246,14 +246,14 @@ export function DimensionsForm({ spec, onUpdate, buildingId }: DimensionsFormPro
               onUpdate({ floorHeight: Math.min(val, maxFloorHeight) });
               playSound('resize_object');
             }}
-            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-amber-400 focus:outline-none transition-colors duration-200"
+            className="flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg text-sm text-center focus:border-blue-400 focus:outline-none transition-colors duration-200"
           />
         </div>
       </div>
 
       <div className="pt-4 mt-6 border-t-2 border-gray-200">
-        <p className="text-base text-gray-700 bg-amber-50 px-4 py-3 rounded-lg border border-amber-200">
-          Total Height: <span className="font-bold text-amber-700">{(spec.numberOfFloors * spec.floorHeight).toFixed(1)}m</span>
+        <p className="text-base text-gray-700 bg-blue-50 px-4 py-3 rounded-lg border border-blue-200">
+          Total Height: <span className="font-bold text-blue-700">{(spec.numberOfFloors * spec.floorHeight).toFixed(1)}m</span>
         </p>
       </div>
     </div>

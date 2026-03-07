@@ -3,7 +3,6 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { BuildingWrapper } from './BuildingWrapper';
-import { GoldEffects, GoldBurst } from './GoldParticles';
 import { useBuildings } from '@/lib/editor/contexts/BuildingsContext';
 import { DEFAULT_BUILDING_SPEC } from '@/lib/editor/types/buildingSpec';
 import { useBuildingSound } from '@/lib/editor/hooks/useBuildingSound';
@@ -21,7 +20,6 @@ function SceneContent({ sceneRef }: SceneContentProps) {
   const gridPlaneRef = useRef<THREE.Mesh>(null);
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number; z: number } | null>(null);
   const [isSnapped, setIsSnapped] = useState(false);
-  const [burstEffects, setBurstEffects] = useState<Array<{ id: number; position: [number, number, number] }>>([]);
 
   // Sync scene ref
   useEffect(() => {
@@ -161,22 +159,11 @@ function SceneContent({ sceneRef }: SceneContentProps) {
     const point = e.point;
     const { x, y, z } = getSnappedPosition(point.x, point.z);
 
-    // Add burst effect at placement position
-    const buildingHeight = DEFAULT_BUILDING_SPEC.floorHeight * DEFAULT_BUILDING_SPEC.numberOfFloors;
-    setBurstEffects(prev => [...prev, {
-      id: Date.now(),
-      position: [x, y + buildingHeight / 2, z] as [number, number, number]
-    }]);
-
     addBuilding({ x, y, z });
     playSound('brick_place');
     setGhostPosition(null);
     setIsSnapped(false);
   };
-
-  const removeBurstEffect = useCallback((id: number) => {
-    setBurstEffects(prev => prev.filter(effect => effect.id !== id));
-  }, []);
 
   return (
     <>
@@ -227,27 +214,10 @@ function SceneContent({ sceneRef }: SceneContentProps) {
         <group position={[ghostPosition.x, ghostPosition.y + (DEFAULT_BUILDING_SPEC.floorHeight * DEFAULT_BUILDING_SPEC.numberOfFloors) / 2, ghostPosition.z]}>
           <mesh>
             <boxGeometry args={[DEFAULT_BUILDING_SPEC.width, DEFAULT_BUILDING_SPEC.floorHeight * DEFAULT_BUILDING_SPEC.numberOfFloors, DEFAULT_BUILDING_SPEC.depth]} />
-            <meshStandardMaterial color={isSnapped ? "#22c55e" : "#f59e0b"} transparent opacity={0.5} />
+            <meshStandardMaterial color={isSnapped ? "#22c55e" : "#3b82f6"} transparent opacity={0.4} />
           </mesh>
-          {/* Gold effects around ghost building */}
-          <GoldEffects
-            position={[0, 0, 0]}
-            width={DEFAULT_BUILDING_SPEC.width}
-            height={DEFAULT_BUILDING_SPEC.floorHeight * DEFAULT_BUILDING_SPEC.numberOfFloors}
-            depth={DEFAULT_BUILDING_SPEC.depth}
-            intensity="high"
-          />
         </group>
       )}
-
-      {/* Burst effects when buildings are placed */}
-      {burstEffects.map(effect => (
-        <GoldBurst
-          key={effect.id}
-          position={effect.position}
-          onComplete={() => removeBurstEffect(effect.id)}
-        />
-      ))}
 
       {/* Buildings */}
       {buildings.map((building) => (

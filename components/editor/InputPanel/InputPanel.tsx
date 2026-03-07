@@ -2,21 +2,16 @@ import { useState } from 'react';
 import { useBuildings } from '@/lib/editor/contexts/BuildingsContext';
 import { TransformForm } from './TransformForm';
 import { DimensionsForm } from './DimensionsForm';
-import { TextureSelector } from './TextureSelector';
 import { WindowForm } from './WindowForm';
-import { TreeForm } from './TreeForm';
-import { BlueprintUploader } from './BlueprintUploader';
 import { BuildingList } from './BuildingList';
 import { DEFAULT_BUILDING_SPEC } from '@/lib/editor/types/buildingSpec';
 
-type SettingsTab = 'transform' | 'dimensions' | 'textures' | 'windows' | 'trees';
+type SettingsTab = 'transform' | 'dimensions' | 'windows';
 
-const TABS: { id: SettingsTab; label: string; icon: string }[] = [
-  { id: 'transform', label: 'Transform', icon: '' },
-  { id: 'dimensions', label: 'Dimensions', icon: '' },
-  { id: 'textures', label: 'Textures', icon: '' },
-  { id: 'windows', label: 'Windows', icon: '' },
-  { id: 'trees', label: 'Trees', icon: '' },
+const TABS: { id: SettingsTab; label: string }[] = [
+  { id: 'transform', label: 'Transform' },
+  { id: 'dimensions', label: 'Dimensions' },
+  { id: 'windows', label: 'Windows' },
 ];
 
 export function InputPanel() {
@@ -61,7 +56,7 @@ export function InputPanel() {
             </h3>
             <button
               onClick={handleReset}
-              className="px-4 py-2 rounded-full font-medium text-xs border-2 bg-amber-200 border-amber-300 text-amber-700 hover:bg-amber-300 hover:border-amber-400 transition-colors duration-200"
+              className="px-4 py-2 rounded-full font-medium text-xs border-2 bg-gray-100 border-gray-300 text-gray-600 hover:bg-gray-200 hover:border-gray-400 transition-colors duration-200"
             >
               Reset
             </button>
@@ -76,11 +71,10 @@ export function InputPanel() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     activeTab === tab.id
-                      ? 'bg-white text-amber-600 shadow-[0_2px_10px_-2px_rgba(245,158,11,0.3)]'
-                      : 'text-gray-600 hover:text-amber-700 hover:bg-amber-50'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                   }`}
                 >
-                  <span>{tab.icon}</span>
                   <span>{tab.label}</span>
                 </button>
               ))}
@@ -106,14 +100,8 @@ export function InputPanel() {
                   buildingId={selectedBuilding.id}
                 />
               )}
-              {activeTab === 'textures' && (
-                <TextureSelector spec={selectedBuilding.spec} onUpdate={handleUpdate} />
-              )}
               {activeTab === 'windows' && (
                 <WindowForm spec={selectedBuilding.spec} onUpdate={handleUpdate} />
-              )}
-              {activeTab === 'trees' && (
-                <TreeForm spec={selectedBuilding.spec} onUpdate={handleUpdate} />
               )}
             </div>
           </div>
@@ -126,13 +114,6 @@ export function InputPanel() {
           </div>
         </div>
       )}
-
-      {/* Blueprint Tracer - Fixed at Bottom */}
-      <div className="p-6 pt-4 border-t border-gray-200">
-        <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
-          <BlueprintUploader />
-        </div>
-      </div>
     </div>
   );
 }
