@@ -318,6 +318,12 @@ export function HospitalForm({ spec, onUpdate }: HospitalFormProps) {
 
           {/* Key metrics */}
           <div className="grid grid-cols-2 gap-2 text-xs">
+            {beds > 0 && (
+              <div className="bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
+                <span className="text-gray-500">Total Beds</span>
+                <p className="font-bold text-blue-700">{beds}</p>
+              </div>
+            )}
             {beds > 0 && rooms > 0 && (
               <div className="bg-gray-50 px-3 py-2 rounded-lg border border-gray-200">
                 <span className="text-gray-500">Beds / Room</span>

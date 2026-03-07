@@ -1,6 +1,7 @@
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
 import * as THREE from 'three';
 import { BuildingSpecification, BuildingExportData, BuildingInstance, MultiBuildingExportData } from '@/lib/editor/types/buildingSpec';
+import { extractHospitalMetadata } from '@/lib/editor/utils/hospitalMetadata';
 
 export function exportToGLB(buildingGroup: THREE.Group, filename: string = 'building.glb'): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -296,10 +297,11 @@ function cleanClonedGroup(group: THREE.Group): void {
   });
 }
 
-// Export to Map - sends GLB to API and returns the building ID
+// Export to Map - sends GLB + hospital metadata to API and returns the building ID
 export async function exportToMap(
   scene: THREE.Scene,
-  buildingName: string = 'building'
+  buildingName: string = 'building',
+  buildings: BuildingInstance[] = []
 ): Promise<{ id: string; url: string }> {
   return new Promise((resolve, reject) => {
     const exporter = new GLTFExporter();
@@ -474,14 +476,18 @@ export async function exportToMap(
         try {
           const arrayBuffer = result as ArrayBuffer;
 
+          // Build FormData with GLB + metadata JSON
+          const formData = new FormData();
+          formData.append('glb', new Blob([arrayBuffer], { type: 'model/gltf-binary' }), `${buildingName}.glb`);
+
+          const metadata = extractHospitalMetadata(buildings);
+          formData.append('metadata', JSON.stringify(metadata));
+          formData.append('name', buildingName);
+
           // Send to the API
           const response = await fetch('/api/editor/building', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/octet-stream',
-              'X-Building-Name': buildingName,
-            },
-            body: arrayBuffer,
+            body: formData,
           });
 
           if (!response.ok) {

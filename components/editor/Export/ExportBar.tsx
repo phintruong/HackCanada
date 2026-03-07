@@ -61,7 +61,7 @@ export function ExportBar({ sceneRef }: ExportBarProps) {
 
     setExportingToMap(true);
     try {
-      const { id } = await exportToMap(sceneRef.current, 'custom-building');
+      const { id } = await exportToMap(sceneRef.current, 'custom-building', buildings);
       // Navigate to map with the building ID
       router.push(`/map?buildingId=${id}`);
     } catch (error) {

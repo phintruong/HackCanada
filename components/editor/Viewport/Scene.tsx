@@ -1,14 +1,12 @@
-import React, { useRef, useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { OrbitControls, Grid, OrthographicCamera } from '@react-three/drei';
+import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { BuildingWrapper } from './BuildingWrapper';
 import { useBuildings } from '@/lib/editor/contexts/BuildingsContext';
 import { DEFAULT_BUILDING_SPEC } from '@/lib/editor/types/buildingSpec';
 import { useBuildingSound } from '@/lib/editor/hooks/useBuildingSound';
 import { FloorPlanView } from '@/components/editor/FloorPlan/FloorPlanView';
-import { ROOM_TYPES } from '@/lib/editor/floorplan/roomTypes';
-import { generateFloorPlan } from '@/lib/editor/floorplan/layoutAlgorithm';
 
 const SNAP_THRESHOLD = 5; // Units within which snapping activates
 
@@ -17,7 +15,7 @@ interface SceneContentProps {
 }
 
 function SceneContent({ sceneRef }: SceneContentProps) {
-  const { buildings, selectedBuildingId, selectBuilding, addBuilding, placementMode, clearSelection, floorPlanRoomType, getSelectedBuilding } = useBuildings();
+  const { buildings, selectedBuildingId, selectBuilding, addBuilding, placementMode, clearSelection, floorPlanFloor, getSelectedBuilding } = useBuildings();
   const { scene } = useThree();
   const { play: playSound } = useBuildingSound();
   const gridPlaneRef = useRef<THREE.Mesh>(null);
@@ -168,25 +166,8 @@ function SceneContent({ sceneRef }: SceneContentProps) {
     setIsSnapped(false);
   };
 
-  // Compute floor plan layout dimensions for camera positioning
   const selectedBuilding = getSelectedBuilding();
-  const floorPlanLayout = useMemo(() => {
-    if (!floorPlanRoomType || !selectedBuilding) return null;
-    const roomDef = ROOM_TYPES.find((r) => r.id === floorPlanRoomType);
-    if (!roomDef) return null;
-    const count = roomDef.getCount(selectedBuilding.spec);
-    if (count <= 0) return null;
-    return generateFloorPlan(roomDef, count);
-  }, [floorPlanRoomType, selectedBuilding]);
-
-  const isFloorPlanMode = !!floorPlanRoomType && !!floorPlanLayout;
-
-  // Calculate zoom to fit the layout
-  const floorPlanZoom = useMemo(() => {
-    if (!floorPlanLayout) return 10;
-    const maxDim = Math.max(floorPlanLayout.totalWidth, floorPlanLayout.totalDepth);
-    return Math.max(2, 80 / maxDim);
-  }, [floorPlanLayout]);
+  const isFloorPlanMode = floorPlanFloor !== null && !!selectedBuilding;
 
   return (
     <>
@@ -201,7 +182,7 @@ function SceneContent({ sceneRef }: SceneContentProps) {
       {isFloorPlanMode ? (
         <>
           {/* Floor plan rendering */}
-          <FloorPlanView roomType={floorPlanRoomType!} spec={selectedBuilding!.spec} />
+          <FloorPlanView floorIndex={floorPlanFloor!} spec={selectedBuilding!.spec} />
 
           {/* Full 3D orbit controls for floor plan */}
           <OrbitControls
