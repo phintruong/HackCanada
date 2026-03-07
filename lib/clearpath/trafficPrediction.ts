@@ -115,3 +115,127 @@ export function shouldReroute(
 ): boolean {
   return currentPrediction.avgCongestionLevel >= threshold;
 }
+
+// ---------------------------------------------------------------------------
+// Smart Reroute Alerts
+// ---------------------------------------------------------------------------
+
+export interface RerouteAlert {
+  id: string;
+  trigger: 'traffic' | 'capacity' | 'diversion' | 'incident' | 'faster_alt';
+  title: string;
+  description: string;
+  severity: 'warning' | 'critical';
+  suggestedHospital?: string;
+}
+
+const TRIGGER_ICONS: Record<RerouteAlert['trigger'], string> = {
+  traffic: 'Heavy Traffic Detected',
+  capacity: 'ER Capacity Surge',
+  diversion: 'Hospital on Diversion',
+  incident: 'Road Incident Ahead',
+  faster_alt: 'Faster Alternative Found',
+};
+
+function seededRandom(seed: string): number {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+  }
+  return Math.abs((Math.sin(hash) * 10000) % 1);
+}
+
+export interface RerouteAlertInput {
+  prediction: TimelinePrediction;
+  recommended: {
+    hospital: { id?: string; _id?: string; name: string };
+    occupancyPct: number;
+    distanceKm: number;
+    totalEstimatedMinutes: number;
+    congestionSegments?: string[];
+  };
+  alternatives: Array<{
+    hospital: { name: string };
+    totalEstimatedMinutes: number;
+  }>;
+}
+
+export function generateRerouteAlerts(input: RerouteAlertInput): RerouteAlert[] {
+  const { prediction, recommended, alternatives } = input;
+  const alerts: RerouteAlert[] = [];
+  const bestAlt = alternatives[0];
+  const bestAltName = bestAlt?.hospital?.name ?? 'an alternative hospital';
+  const hospitalId = recommended.hospital?.id ?? (recommended.hospital as any)?._id ?? 'unknown';
+  const hour = new Date().getHours();
+
+  // 1. Heavy traffic on current route
+  if (prediction.avgCongestionLevel >= 2.5) {
+    const level = prediction.avgCongestionLevel >= 3.5 ? 'Severe' : 'Heavy';
+    alerts.push({
+      id: 'traffic',
+      trigger: 'traffic',
+      title: TRIGGER_ICONS.traffic,
+      description: `${level} congestion detected on your route. Drive time increased by +${Math.round((prediction.drivingTimeMultiplier - 1) * 100)}%. Consider rerouting to ${bestAltName}.`,
+      severity: prediction.avgCongestionLevel >= 3.5 ? 'critical' : 'warning',
+      suggestedHospital: bestAltName,
+    });
+  }
+
+  // 2. ER capacity surge — occupancy above 90%
+  if (recommended.occupancyPct > 90) {
+    alerts.push({
+      id: 'capacity',
+      trigger: 'capacity',
+      title: TRIGGER_ICONS.capacity,
+      description: `${recommended.hospital.name} is at ${Math.round(recommended.occupancyPct)}% capacity. Expect extended wait times. ${bestAltName} may have shorter waits.`,
+      severity: recommended.occupancyPct > 95 ? 'critical' : 'warning',
+      suggestedHospital: bestAltName,
+    });
+  }
+
+  // 3. Hospital diversion — deterministic ~8% chance per hospital+hour
+  const divSeed = `${hospitalId}-${hour}-diversion`;
+  if (seededRandom(divSeed) < 0.08) {
+    alerts.push({
+      id: 'diversion',
+      trigger: 'diversion',
+      title: TRIGGER_ICONS.diversion,
+      description: `${recommended.hospital.name} has gone on diversion and is not accepting new ER patients. Rerouting to ${bestAltName} is recommended.`,
+      severity: 'critical',
+      suggestedHospital: bestAltName,
+    });
+  }
+
+  // 4. Road incident — probability scales with route length and congestion
+  if (prediction.avgCongestionLevel >= 3 && recommended.distanceKm > 5) {
+    const incidentSeed = `${hospitalId}-${hour}-incident`;
+    if (seededRandom(incidentSeed) < 0.15) {
+      alerts.push({
+        id: 'incident',
+        trigger: 'incident',
+        title: TRIGGER_ICONS.incident,
+        description: `A collision has been reported along your route to ${recommended.hospital.name}. Consider rerouting to ${bestAltName} to avoid delays.`,
+        severity: 'warning',
+        suggestedHospital: bestAltName,
+      });
+    }
+  }
+
+  // 5. Faster alternative found — alt is 15%+ faster
+  if (bestAlt && recommended.totalEstimatedMinutes > 0) {
+    const savings = recommended.totalEstimatedMinutes - bestAlt.totalEstimatedMinutes;
+    const pctFaster = savings / recommended.totalEstimatedMinutes;
+    if (pctFaster >= 0.15 && savings >= 5) {
+      alerts.push({
+        id: 'faster_alt',
+        trigger: 'faster_alt',
+        title: TRIGGER_ICONS.faster_alt,
+        description: `${bestAlt.hospital.name} is ~${Math.round(savings)} min faster overall (${bestAlt.totalEstimatedMinutes} min vs ${recommended.totalEstimatedMinutes} min).`,
+        severity: 'warning',
+        suggestedHospital: bestAlt.hospital.name,
+      });
+    }
+  }
+
+  return alerts;
+}

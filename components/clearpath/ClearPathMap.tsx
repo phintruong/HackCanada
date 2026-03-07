@@ -393,9 +393,15 @@ export default function ClearPathMap({
       animSrc.setData({ type: 'Feature', geometry: trimmedGeometry, properties: {} });
     }
 
-    // Rebuild traffic segments for the trimmed route
-    const trimmedBase = baseCongestion?.slice(0, visibleCount - 1);
-    const mergedSegs = buildTrafficSegments(trimmedCoords, trimmedBase);
+    // Build predicted congestion array for the visible portion of the route.
+    // Each predSeg maps 1:1 to a coordinate pair [i, i+1].
+    const predictedCongestion: string[] = [];
+    for (let i = 0; i < visibleCount - 1; i++) {
+      const seg = predSegs[Math.min(i, predSegs.length - 1)];
+      predictedCongestion.push(seg?.congestion ?? 'unknown');
+    }
+
+    const mergedSegs = buildTrafficSegments(trimmedCoords, predictedCongestion);
 
     // Update existing traffic segment layers: show visible ones, hide the rest
     for (let i = 0; i < 200; i++) {
@@ -404,19 +410,15 @@ export default function ClearPathMap({
       if (!map.getLayer(layerId)) break;
 
       if (i < mergedSegs.length) {
-        // Update geometry
         const src = map.getSource(srcId) as mapboxgl.GeoJSONSource | undefined;
         if (src) {
           src.setData({ type: 'Feature', geometry: mergedSegs[i].geometry, properties: {} });
         }
 
-        // Apply predicted color
-        const predSeg = predSegs[Math.min(i, predSegs.length - 1)];
-        const color = CONGESTION_COLORS[predSeg?.congestion ?? 'unknown'] ?? CONGESTION_COLORS.unknown;
+        const color = CONGESTION_COLORS[mergedSegs[i].congestion] ?? CONGESTION_COLORS.unknown;
         map.setPaintProperty(layerId, 'line-color', color);
         map.setPaintProperty(layerId, 'line-opacity', 0.9);
       } else {
-        // Hide segments beyond the trimmed route
         map.setPaintProperty(layerId, 'line-opacity', 0);
       }
     }

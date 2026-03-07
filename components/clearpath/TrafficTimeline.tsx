@@ -3,15 +3,20 @@
 import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import {
   predictTrafficTimeline,
-  shouldReroute,
+  generateRerouteAlerts,
   type TimelinePrediction,
+  type RerouteAlert,
+  type RerouteAlertInput,
 } from '@/lib/clearpath/trafficPrediction';
 
 interface TrafficTimelineProps {
   congestionSegments?: string[];
   segmentCount: number;
   onTimeChange: (prediction: TimelinePrediction, isDragging: boolean) => void;
-  onRerouteRequest: () => void;
+  onRerouteRequest: (alert: RerouteAlert) => void;
+  recommended?: any;
+  alternatives?: any[];
+  isRerouting?: boolean;
 }
 
 const CONGESTION_COLORS: Record<string, string> = {
@@ -21,13 +26,30 @@ const CONGESTION_COLORS: Record<string, string> = {
   severe: '#dc2626',
 };
 
+const TRIGGER_ICONS: Record<RerouteAlert['trigger'], string> = {
+  traffic: '\u26A0',
+  capacity: '\uD83C\uDFE5',
+  diversion: '\uD83D\uDEAB',
+  incident: '\uD83D\uDEA7',
+  faster_alt: '\u26A1',
+};
+
+const TRIGGER_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  warning: { bg: 'bg-amber-500/15', border: 'border-amber-500/30', text: 'text-amber-300' },
+  critical: { bg: 'bg-red-500/15', border: 'border-red-500/30', text: 'text-red-300' },
+};
+
 export default function TrafficTimeline({
   congestionSegments,
   segmentCount,
   onTimeChange,
   onRerouteRequest,
+  recommended,
+  alternatives = [],
+  isRerouting = false,
 }: TrafficTimelineProps) {
   const [activeStep, setActiveStep] = useState(0);
+  const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(new Set());
   const trackRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -37,7 +59,25 @@ export default function TrafficTimeline({
   );
 
   const current = predictions[activeStep];
-  const rerouteAvailable = current ? shouldReroute(current) : false;
+
+  const alerts = useMemo(() => {
+    if (!current || !recommended) return [];
+    const input: RerouteAlertInput = {
+      prediction: current,
+      recommended: {
+        hospital: recommended.hospital ?? recommended,
+        occupancyPct: recommended.occupancyPct ?? 70,
+        distanceKm: recommended.distanceKm ?? 10,
+        totalEstimatedMinutes: recommended.totalEstimatedMinutes ?? 30,
+        congestionSegments: recommended.congestionSegments,
+      },
+      alternatives: alternatives.map((a: any) => ({
+        hospital: a.hospital ?? a,
+        totalEstimatedMinutes: a.totalEstimatedMinutes ?? 30,
+      })),
+    };
+    return generateRerouteAlerts(input).filter(a => !dismissedAlerts.has(a.id));
+  }, [current, recommended, alternatives, dismissedAlerts]);
 
   const updateStep = useCallback(
     (clientX: number, isDrag: boolean) => {
@@ -71,9 +111,6 @@ export default function TrafficTimeline({
 
   const handlePointerUp = useCallback(() => {
     dragging.current = false;
-    // When the slider is released, treat it as inactive:
-    // keep the selected time, but switch the map back to showing
-    // the full route instead of a partial progress slice.
     if (predictions[activeStep]) {
       onTimeChange(predictions[activeStep], false);
     }
@@ -83,8 +120,11 @@ export default function TrafficTimeline({
     if (predictions[0]) {
       onTimeChange(predictions[0], false);
     }
-    // We intentionally only fire on first mount for the initial "Now" state.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleDismiss = useCallback((alertId: string) => {
+    setDismissedAlerts(prev => new Set(prev).add(alertId));
   }, []);
 
   if (!current) return null;
@@ -98,6 +138,52 @@ export default function TrafficTimeline({
 
   return (
     <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 w-[calc(100%-32rem)] min-w-[320px] max-w-[700px]">
+      {/* Reroute alert cards — stack above the timeline */}
+      {alerts.length > 0 && (
+        <div className="mb-2 space-y-2">
+          {alerts.map((alert) => {
+            const colors = TRIGGER_COLORS[alert.severity];
+            return (
+              <div
+                key={alert.id}
+                className={`${colors.bg} ${colors.border} border backdrop-blur-xl rounded-xl px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.5)] animate-in slide-in-from-bottom-2`}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="text-lg leading-none mt-0.5">{TRIGGER_ICONS[alert.trigger]}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-[11px] font-bold ${colors.text} uppercase tracking-wider`}>
+                      {alert.title}
+                    </p>
+                    <p className="text-[10px] text-slate-300 leading-relaxed mt-1">
+                      {alert.description}
+                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <button
+                        onClick={() => onRerouteRequest(alert)}
+                        disabled={isRerouting}
+                        className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide transition-colors ${
+                          alert.severity === 'critical'
+                            ? 'bg-red-500 hover:bg-red-400 text-white'
+                            : 'bg-amber-500 hover:bg-amber-400 text-slate-900'
+                        } ${isRerouting ? 'opacity-50 cursor-wait' : ''}`}
+                      >
+                        {isRerouting ? 'Rerouting...' : 'Accept Reroute'}
+                      </button>
+                      <button
+                        onClick={() => handleDismiss(alert.id)}
+                        className="px-2 py-1 text-[10px] text-slate-400 hover:text-slate-200 transition-colors"
+                      >
+                        Dismiss
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
@@ -200,13 +286,13 @@ export default function TrafficTimeline({
             </span>
           </div>
 
-          {rerouteAvailable && (
-            <button
-              onClick={onRerouteRequest}
-              className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 rounded-full text-[10px] font-bold uppercase tracking-wide transition-colors animate-pulse"
-            >
-              Reroute Available
-            </button>
+          {alerts.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+              <span className="text-[10px] text-amber-300 font-semibold">
+                {alerts.length} alert{alerts.length > 1 ? 's' : ''}
+              </span>
+            </div>
           )}
         </div>
 

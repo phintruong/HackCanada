@@ -7,7 +7,7 @@ import RoutingResult from './RoutingResult';
 import { VitalsPayload, SymptomsPayload } from '@/lib/clearpath/types';
 
 interface CivilianPanelProps {
-  onRecommendation: (result: any) => void;
+  onRecommendation: (result: any, routeParams?: any) => void;
 }
 
 type Step = 'address' | 'vitals' | 'symptoms' | 'loading' | 'result';
@@ -152,7 +152,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
         const route = await routeRes.json();
         setRouteResult(route);
         setActiveRouteId(route.recommended?.hospital?.id ?? route.recommended?.hospital?._id ?? null);
-        onRecommendation(route);
+        onRecommendation(route, routeBody);
         setStep('result');
       } catch (err) {
         setError('Failed to complete triage. Please try again.');

@@ -7,7 +7,7 @@ import GovernmentSidebar from '@/components/clearpath/government/GovernmentSideb
 import CivilianPanel from '@/components/clearpath/civilian/CivilianPanel';
 import TrafficTimeline from '@/components/clearpath/TrafficTimeline';
 import { CITIES } from '@/lib/map-3d/cities';
-import type { TimelinePrediction } from '@/lib/clearpath/trafficPrediction';
+import type { TimelinePrediction, RerouteAlert } from '@/lib/clearpath/trafficPrediction';
 
 export default function MapPage() {
   const [mode, setMode] = useState<'government' | 'civilian'>('civilian');
@@ -19,6 +19,8 @@ export default function MapPage() {
   const [isTimelineDragging, setIsTimelineDragging] = useState(false);
 
   const originalRouteRef = useRef<any>(null);
+  const lastRouteParamsRef = useRef<any>(null);
+  const [isRerouting, setIsRerouting] = useState(false);
 
   const handleMapClick = useCallback((lngLat: { lng: number; lat: number }) => {
     if (mode === 'government') {
@@ -31,13 +33,15 @@ export default function MapPage() {
     setSelectedCity(city);
   }, []);
 
-  const handleRecommendation = useCallback((result: any) => {
+  const handleRecommendation = useCallback((result: any, routeParams?: any) => {
     setRecommendedHospital(result);
+    if (routeParams) lastRouteParamsRef.current = routeParams;
     if (result && !originalRouteRef.current) {
       originalRouteRef.current = result;
     }
     if (!result) {
       originalRouteRef.current = null;
+      lastRouteParamsRef.current = null;
       setTrafficPrediction(null);
     }
   }, []);
@@ -47,15 +51,45 @@ export default function MapPage() {
     setIsTimelineDragging(dragging);
   }, []);
 
-  const handleRerouteRequest = useCallback(() => {
-    const orig = originalRouteRef.current;
-    if (!orig?.alternatives?.length) return;
-    const bestAlt = orig.alternatives[0];
-    setRecommendedHospital({
-      ...orig,
-      recommended: bestAlt,
-      alternatives: [orig.recommended, ...orig.alternatives.slice(1)],
-    });
+  const handleRerouteRequest = useCallback(async (alert: RerouteAlert) => {
+    const params = lastRouteParamsRef.current;
+    if (!params) {
+      const orig = originalRouteRef.current;
+      if (!orig?.alternatives?.length) return;
+      const bestAlt = orig.alternatives[0];
+      setRecommendedHospital({
+        ...orig,
+        recommended: bestAlt,
+        alternatives: [orig.recommended, ...orig.alternatives.slice(1)],
+      });
+      return;
+    }
+
+    setIsRerouting(true);
+    try {
+      const routeRes = await fetch('/api/clearpath/route', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      });
+      if (!routeRes.ok) throw new Error('Reroute failed');
+      const route = await routeRes.json();
+      originalRouteRef.current = route;
+      setRecommendedHospital(route);
+    } catch (err) {
+      console.error('Reroute failed, falling back to local swap', err);
+      const orig = originalRouteRef.current;
+      if (orig?.alternatives?.length) {
+        const bestAlt = orig.alternatives[0];
+        setRecommendedHospital({
+          ...orig,
+          recommended: bestAlt,
+          alternatives: [orig.recommended, ...orig.alternatives.slice(1)],
+        });
+      }
+    } finally {
+      setIsRerouting(false);
+    }
   }, []);
 
   const rec = recommendedHospital?.recommended;
@@ -96,6 +130,9 @@ export default function MapPage() {
           segmentCount={rec.routeGeometry?.coordinates?.length ?? 0}
           onTimeChange={handleTimeChange}
           onRerouteRequest={handleRerouteRequest}
+          recommended={rec}
+          alternatives={recommendedHospital?.alternatives ?? []}
+          isRerouting={isRerouting}
         />
       )}
     </div>
