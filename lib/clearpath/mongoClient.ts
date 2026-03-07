@@ -23,6 +23,16 @@ if (uri) {
 
 export default clientPromise;
 
+export async function getDbOrNull(): Promise<import('mongodb').Db | null> {
+  if (!uri) return null;
+  try {
+    const client = await clientPromise;
+    return client.db('clearpath');
+  } catch {
+    return null;
+  }
+}
+
 export async function getDb() {
   if (!uri) throw new Error('MONGODB_URI is not set');
   const client = await clientPromise;

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { congestionService } from '@/lib/clearpath/congestionService';
+import { getCongestion } from '@/lib/clearpath/dataSource';
+import type { ClearPathScenario } from '@/lib/clearpath/types';
+
+const VALID_SCENARIOS: ClearPathScenario[] = ['normal', 'flu_season', 'weekend_surge', 'mass_casualty'];
 
 export async function GET(req: NextRequest) {
-  const city = req.nextUrl.searchParams.get('city') || undefined;
+  const city = req.nextUrl.searchParams.get('city') ?? 'toronto';
+  const scenarioParam = req.nextUrl.searchParams.get('scenario') ?? 'normal';
+  const scenario: ClearPathScenario = VALID_SCENARIOS.includes(scenarioParam as ClearPathScenario)
+    ? (scenarioParam as ClearPathScenario)
+    : 'normal';
   try {
-    const data = await congestionService.getCongestion(city);
-    return NextResponse.json(data);
+    const { data, source } = await getCongestion(city, scenario);
+    return NextResponse.json({ congestion: data, source });
   } catch (e) {
-    console.warn('Congestion API: DB unavailable', e);
-    return NextResponse.json([]);
+    console.warn('Congestion API error', e);
+    return NextResponse.json({ congestion: [], source: 'synthetic' });
   }
 }

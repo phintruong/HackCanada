@@ -17,6 +17,7 @@ interface ClearPathMapProps {
   mode: 'government' | 'civilian';
   cityId: string;
   cityConfig: CityConfig;
+  scenario?: string;
   simulationResult: any;
   recommendedHospital: any;
   onMapClick?: (lngLat: { lng: number; lat: number }) => void;
@@ -74,6 +75,7 @@ export default function ClearPathMap({
   mode,
   cityId,
   cityConfig,
+  scenario = 'normal',
   simulationResult,
   recommendedHospital,
   onMapClick,
@@ -132,19 +134,19 @@ export default function ClearPathMap({
     async function fetchData() {
       try {
         const [hospRes, congRes] = await Promise.all([
-          fetch('/api/clearpath/hospitals'),
-          fetch('/api/clearpath/congestion'),
+          fetch(`/api/clearpath/hospitals?city=${cityId}`),
+          fetch(`/api/clearpath/congestion?city=${cityId}&scenario=${scenario}`),
         ]);
         const hospData = await hospRes.json();
         const congData = await congRes.json();
-        setHospitals(hospData);
-        setCongestion(congData);
+        setHospitals(Array.isArray(hospData) ? hospData : (hospData.hospitals ?? []));
+        setCongestion(Array.isArray(congData) ? congData : (congData.congestion ?? []));
       } catch (err) {
         console.warn('Failed to fetch hospital data, using empty state', err);
       }
     }
     fetchData();
-  }, []);
+  }, [cityId, scenario]);
 
   useEffect(() => {
     const map = mapRef.current;

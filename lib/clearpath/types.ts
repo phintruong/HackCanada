@@ -1,3 +1,5 @@
+export type ClearPathScenario = 'normal' | 'flu_season' | 'weekend_surge' | 'mass_casualty';
+
 export interface Hospital {
   id: string;
   name: string;
@@ -23,6 +25,7 @@ export interface SimulateRequest {
   proposedLat: number;
   proposedLng: number;
   proposedCapacity: number;
+  scenario?: ClearPathScenario;
 }
 
 export interface SimulateResult {

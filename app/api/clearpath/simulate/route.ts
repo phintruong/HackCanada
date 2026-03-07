@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runSimulation } from '@/lib/clearpath/voronoiService';
-import { getDb } from '@/lib/clearpath/mongoClient';
+import { getHospitals, getCongestion } from '@/lib/clearpath/dataSource';
 import { SimulateRequest } from '@/lib/clearpath/types';
 
 export async function POST(req: NextRequest) {
   const body: SimulateRequest = await req.json();
-  const db = await getDb();
-
-  const hospitals = await db.collection('hospitals')
-    .find({ city: body.city }).toArray();
-  const snapshots = await db.collection('congestion_snapshots')
-    .find({ hospitalId: { $in: hospitals.map(h => h._id.toString()) } })
-    .sort({ recordedAt: -1 }).toArray();
+  const scenario = body.scenario ?? 'normal';
+  const [{ data: hospitals }, { data: snapshots, source }] = await Promise.all([
+    getHospitals(body.city),
+    getCongestion(body.city, scenario),
+  ]);
 
   const result = runSimulation(hospitals, snapshots, {
     lat: body.proposedLat,
@@ -19,5 +17,5 @@ export async function POST(req: NextRequest) {
     capacity: body.proposedCapacity
   });
 
-  return NextResponse.json(result);
+  return NextResponse.json({ ...result, source });
 }

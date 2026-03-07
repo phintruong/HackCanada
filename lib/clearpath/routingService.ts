@@ -122,6 +122,7 @@ export async function scoreAndRankHospitals(
     recommended: scored[0],
     alternatives: scored.slice(1, 3),
   };
+  };
 }
 
 function generateReason(h: ScoredHospital, severity: string, context: string): string {

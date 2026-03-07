@@ -7,11 +7,13 @@ import GovernmentSidebar from '@/components/clearpath/government/GovernmentSideb
 import CivilianPanel from '@/components/clearpath/civilian/CivilianPanel';
 import TrafficTimeline from '@/components/clearpath/TrafficTimeline';
 import { CITIES } from '@/lib/map-3d/cities';
+import type { ClearPathScenario } from '@/lib/clearpath/types';
 import type { TimelinePrediction } from '@/lib/clearpath/trafficPrediction';
 
 export default function MapPage() {
   const [mode, setMode] = useState<'government' | 'civilian'>('civilian');
   const [selectedCity, setSelectedCity] = useState(() => CITIES[0]);
+  const [scenario, setScenario] = useState<ClearPathScenario>('normal');
   const [simulationResult, setSimulationResult] = useState(null);
   const [recommendedHospital, setRecommendedHospital] = useState<any>(null);
   const [proposedLocation, setProposedLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -67,6 +69,7 @@ export default function MapPage() {
         mode={mode}
         cityId={selectedCity.id}
         cityConfig={selectedCity}
+        scenario={scenario}
         simulationResult={simulationResult}
         recommendedHospital={recommendedHospital}
         onMapClick={handleMapClick}
@@ -83,7 +86,12 @@ export default function MapPage() {
         />
         <div className='flex-1 min-h-0'>
           {mode === 'government' ? (
-            <GovernmentSidebar onSimulationResult={setSimulationResult} />
+            <GovernmentSidebar
+              city={selectedCity.id}
+              scenario={scenario}
+              onScenarioChange={setScenario}
+              onSimulationResult={setSimulationResult}
+            />
           ) : (
             <CivilianPanel onRecommendation={handleRecommendation} />
           )}
