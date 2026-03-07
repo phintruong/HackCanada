@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import { createMapboxMap } from '@/lib/mapbox/createMap';
 import CongestionLayer from './CongestionLayer';
 import FlowArcs from './FlowArcs';
+import HospitalFootprintsLayer from './HospitalFootprintsLayer';
+import LandmarksLayer from './LandmarksLayer';
+import type { CityConfig } from '@/lib/map-3d/types';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
 interface ClearPathMapProps {
   mode: 'government' | 'civilian';
+  cityId: string;
+  cityConfig: CityConfig;
   simulationResult: any;
   recommendedHospital: any;
   onMapClick?: (lngLat: { lng: number; lat: number }) => void;
@@ -18,6 +24,8 @@ interface ClearPathMapProps {
 
 export default function ClearPathMap({
   mode,
+  cityId,
+  cityConfig,
   simulationResult,
   recommendedHospital,
   onMapClick,
@@ -30,45 +38,28 @@ export default function ClearPathMap({
   const [congestion, setCongestion] = useState<any[]>([]);
   const proposedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const recommendedMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const prevCityIdRef = useRef(cityId);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
 
-    const map = new mapboxgl.Map({
+    const map = createMapboxMap({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/dark-v11',
       center: [-79.3832, 43.6532],
       zoom: 11.5,
       pitch: 45,
       bearing: -17.6,
+      addGlobalBuildings: false,
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), 'bottom-right');
-
     map.on('load', () => {
-      const layers = map.getStyle().layers;
-      const labelLayerId = layers?.find(
-        (layer) => layer.type === 'symbol' && layer.layout?.['text-field']
-      )?.id;
-
-      map.addLayer(
-        {
-          id: '3d-buildings',
-          source: 'composite',
-          'source-layer': 'building',
-          filter: ['==', 'extrude', 'true'],
-          type: 'fill-extrusion',
-          minzoom: 12,
-          paint: {
-            'fill-extrusion-color': '#aaa',
-            'fill-extrusion-height': ['get', 'height'],
-            'fill-extrusion-base': ['get', 'min_height'],
-            'fill-extrusion-opacity': 0.6,
-          },
-        },
-        labelLayerId
-      );
-
+      map.flyTo({
+        center: [-79.3832, 43.6532],
+        zoom: 13,
+        pitch: 65,
+        bearing: -20,
+        duration: 2000,
+      });
       setMapReady(true);
     });
 
@@ -81,6 +72,7 @@ export default function ClearPathMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      setMapReady(false);
     };
   }, []);
 
@@ -88,8 +80,8 @@ export default function ClearPathMap({
     async function fetchData() {
       try {
         const [hospRes, congRes] = await Promise.all([
-          fetch('/api/clearpath/hospitals?city=toronto'),
-          fetch('/api/clearpath/congestion?city=toronto'),
+          fetch(`/api/clearpath/hospitals?city=${cityId}`),
+          fetch(`/api/clearpath/congestion?city=${cityId}`),
         ]);
         const hospData = await hospRes.json();
         const congData = await congRes.json();
@@ -100,7 +92,21 @@ export default function ClearPathMap({
       }
     }
     fetchData();
-  }, []);
+  }, [cityId]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (prevCityIdRef.current === cityId) return;
+    prevCityIdRef.current = cityId;
+    map.flyTo({
+      center: cityConfig.center,
+      zoom: cityConfig.zoom ?? 11.5,
+      pitch: cityConfig.pitch ?? 65,
+      bearing: cityConfig.bearing ?? -20,
+      duration: 2000,
+    });
+  }, [cityId, cityConfig, mapReady]);
 
   useEffect(() => {
     if (!mapRef.current || !proposedLocation) {
@@ -166,6 +172,8 @@ export default function ClearPathMap({
       <div ref={mapContainer} className="w-full h-full" />
       {mapReady && (
         <>
+          <HospitalFootprintsLayer map={mapRef.current} cityId={cityId} />
+          <LandmarksLayer map={mapRef.current} cityId={cityId} />
           <CongestionLayer map={mapRef.current} hospitals={hospitals} congestion={congestion} />
           <FlowArcs
             map={mapRef.current}
