@@ -22,6 +22,51 @@ interface ClearPathMapProps {
   proposedLocation?: { lat: number; lng: number } | null;
 }
 
+const CONGESTION_COLORS: Record<string, string> = {
+  low: '#22c55e',
+  moderate: '#eab308',
+  heavy: '#f97316',
+  severe: '#dc2626',
+  unknown: '#22c55e',
+};
+
+const CONGESTION_SPEED: Record<string, number> = {
+  low: 1.8,
+  moderate: 1.0,
+  heavy: 0.5,
+  severe: 0.2,
+  unknown: 1.8,
+};
+
+function buildTrafficSegments(
+  coordinates: [number, number][],
+  congestionSegments?: string[]
+): Array<{ geometry: GeoJSON.LineString; congestion: string }> {
+  const segments: Array<{ geometry: GeoJSON.LineString; congestion: string }> = [];
+  for (let i = 0; i < coordinates.length - 1; i++) {
+    const level = congestionSegments?.[i] ?? 'unknown';
+    segments.push({
+      geometry: { type: 'LineString', coordinates: [coordinates[i], coordinates[i + 1]] },
+      congestion: level,
+    });
+  }
+
+  // Merge consecutive segments with the same congestion level
+  const merged: typeof segments = [];
+  for (const seg of segments) {
+    const last = merged[merged.length - 1];
+    if (last && last.congestion === seg.congestion) {
+      last.geometry.coordinates.push(seg.geometry.coordinates[1]);
+    } else {
+      merged.push({
+        geometry: { type: 'LineString', coordinates: [...seg.geometry.coordinates] },
+        congestion: seg.congestion,
+      });
+    }
+  }
+  return merged;
+}
+
 export default function ClearPathMap({
   mode,
   cityId,
@@ -40,6 +85,7 @@ export default function ClearPathMap({
   const recommendedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const prevCityIdRef = useRef(cityId);
+  const trafficAnimRef = useRef<number>(0);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -148,6 +194,21 @@ export default function ClearPathMap({
     userMarkerRef.current?.remove();
     userMarkerRef.current = null;
 
+    cancelAnimationFrame(trafficAnimRef.current);
+
+    // Remove animated dash layer
+    if (map.getLayer('driving-route-anim-line')) map.removeLayer('driving-route-anim-line');
+    if (map.getSource('driving-route-anim')) map.removeSource('driving-route-anim');
+
+    // Remove traffic segment layers
+    for (let i = 0; i < 200; i++) {
+      const lid = `traffic-seg-line-${i}`;
+      const sid = `traffic-seg-${i}`;
+      if (!map.getLayer(lid)) break;
+      map.removeLayer(lid);
+      map.removeSource(sid);
+    }
+
     if (map.getLayer('driving-route-line')) map.removeLayer('driving-route-line');
     if (map.getSource('driving-route')) map.removeSource('driving-route');
     if (map.getLayer('alt-route-line-0')) map.removeLayer('alt-route-line-0');
@@ -176,21 +237,12 @@ export default function ClearPathMap({
         .addTo(map);
     }
 
-    // Recommended hospital marker
-    const el = document.createElement('div');
-    el.style.cssText = `
-      width: 32px; height: 32px; border-radius: 50%;
-      background: #22c55e; border: 3px solid #fff;
-      box-shadow: 0 0 16px rgba(34,197,94,0.7);
-      animation: bounce 1s infinite;
-    `;
-    recommendedMarkerRef.current = new mapboxgl.Marker({ element: el })
-      .setLngLat([h.longitude, h.latitude])
-      .addTo(map);
-
-    // Draw driving route (if geometry available)
+    // Draw traffic-colored route with animated dashes
     const routeGeometry = rec.routeGeometry;
+    const congestionSegs = rec.congestionSegments as string[] | undefined;
+
     if (routeGeometry && map.isStyleLoaded()) {
+      // Background: subtle dark line for depth
       map.addSource('driving-route', {
         type: 'geojson',
         data: { type: 'Feature', geometry: routeGeometry, properties: {} },
@@ -201,11 +253,66 @@ export default function ClearPathMap({
         source: 'driving-route',
         layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#22c55e',
-          'line-width': 5,
-          'line-opacity': 0.85,
+          'line-color': '#0f172a',
+          'line-width': 8,
+          'line-opacity': 0.35,
         },
       });
+
+      // Traffic-colored segments on top
+      const trafficSegs = buildTrafficSegments(routeGeometry.coordinates, congestionSegs);
+      trafficSegs.forEach((seg, i) => {
+        const srcId = `traffic-seg-${i}`;
+        const layerId = `traffic-seg-line-${i}`;
+        map.addSource(srcId, {
+          type: 'geojson',
+          data: { type: 'Feature', geometry: seg.geometry, properties: {} },
+        });
+        map.addLayer({
+          id: layerId,
+          type: 'line',
+          source: srcId,
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': CONGESTION_COLORS[seg.congestion] ?? CONGESTION_COLORS.unknown,
+            'line-width': 5,
+            'line-opacity': 0.9,
+          },
+        });
+      });
+
+      // Animated dash overlay that "flows" along the route
+      map.addSource('driving-route-anim', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: routeGeometry, properties: {} },
+      });
+      map.addLayer({
+        id: 'driving-route-anim-line',
+        type: 'line',
+        source: 'driving-route-anim',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: {
+          'line-color': '#ffffff',
+          'line-width': 2,
+          'line-opacity': 0.6,
+          'line-dasharray': [0, 4, 3],
+        },
+      });
+
+      // Animate the dash offset
+      let dashOffset = 0;
+      const avgSpeed = congestionSegs?.length
+        ? congestionSegs.reduce((sum, c) => sum + (CONGESTION_SPEED[c] ?? 1.8), 0) / congestionSegs.length
+        : 1.8;
+
+      function animateDash() {
+        if (!map) return;
+        dashOffset -= avgSpeed * 0.15;
+        const phase = ((dashOffset % 7) + 7) % 7;
+        map.setPaintProperty('driving-route-anim-line', 'line-dasharray', [phase, 4, 3]);
+        trafficAnimRef.current = requestAnimationFrame(animateDash);
+      }
+      trafficAnimRef.current = requestAnimationFrame(animateDash);
     }
 
     // Draw alternative routes as dashed lines
@@ -224,7 +331,7 @@ export default function ClearPathMap({
           paint: {
             'line-color': '#94a3b8',
             'line-width': 3,
-            'line-opacity': 0.5,
+            'line-opacity': 0.4,
             'line-dasharray': [2, 2],
           },
         });

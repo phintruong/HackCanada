@@ -77,6 +77,7 @@ export interface ScoredHospital {
   occupancyPct: number;
   specialtyMatch: boolean;
   routeGeometry: any;
+  congestionSegments?: string[];
   totalEstimatedMinutes: number;
   reason: string;
 }

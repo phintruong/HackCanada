@@ -139,7 +139,7 @@ export default function Landing() {
         {/* ───── YOUR JOURNEY ───── */}
 <section className="bg-[#334155]" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
   <FeatureSteps
-    title="How ClearPath ER Works"
+    title="How ClearPath Works"
     subtitle="Reducing ER congestion with data, simulation, and smart routing."
     features={[
       {

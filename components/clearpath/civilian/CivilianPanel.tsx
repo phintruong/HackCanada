@@ -201,7 +201,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
     <div className="h-full bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.65)] border border-white/20 rounded-3xl p-5 overflow-y-auto">
       <div className="mb-6">
         <h2 className="text-lg font-black text-red-700 uppercase tracking-tight">
-          ClearPath ER
+          ClearPath
         </h2>
         <p className="text-xs text-slate-500 mt-1">
           Find the right ER for your situation.

@@ -72,6 +72,7 @@ export async function scoreAndRankHospitals(
     const rawDriveTime = directions?.drivingTimeMinutes ?? 15;
     const distanceKm = directions?.distanceKm ?? 10;
     const routeGeometry = directions?.routeGeometry ?? null;
+    const congestionSegments = directions?.congestionSegments;
 
     // Apply temporal adjustments
     const drivingTimeMinutes = getAdjustedDrivingTime(rawDriveTime, distanceKm, now);
@@ -102,6 +103,7 @@ export async function scoreAndRankHospitals(
       occupancyPct: congestion.occupancyPct,
       specialtyMatch: specialty.match,
       routeGeometry,
+      congestionSegments,
       totalEstimatedMinutes,
       reason: '',
     };

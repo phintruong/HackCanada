@@ -10,7 +10,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ClearPath ER — Reduce ER Congestion",
+  title: "ClearPath — Reduce ER Congestion",
   description: "Model ER placement, triage by severity, and route patients. For Ontario healthcare and civilians.",
 };
 

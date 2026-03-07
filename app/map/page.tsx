@@ -36,7 +36,7 @@ export default function MapPage() {
         onMapClick={handleMapClick}
         proposedLocation={proposedLocation}
       />
-      <div className='absolute top-0 left-0 w-96 z-10 flex flex-col gap-3 p-4 max-h-screen overflow-y-auto'>
+      <div className='absolute top-0 left-0 w-[28rem] z-10 flex flex-col gap-3 p-4 max-h-screen overflow-y-auto'>
         <ModeToggle mode={mode} onChange={setMode} />
         <CitySelector
           cities={CITIES}
