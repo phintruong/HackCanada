@@ -13,11 +13,8 @@ export async function POST(req: NextRequest) {
     .find({ hospitalId: { $in: hospitals.map(h => h._id.toString()) } })
     .sort({ recordedAt: -1 }).toArray();
 
-  const result = runSimulation(hospitals, snapshots, {
-    lat: body.proposedLat,
-    lng: body.proposedLng,
-    capacity: body.proposedCapacity
-  });
+  const proposals = body.proposals ?? [];
+  const result = runSimulation(hospitals, snapshots, proposals);
 
   return NextResponse.json(result);
 }

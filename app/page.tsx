@@ -46,19 +46,21 @@ export default function Landing() {
   return (
     <div className="lp">
       {/* Top buttons */}
-      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center gap-4 pt-5">
-        <Link
-          href="/map"
-          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-slate-200 bg-slate-800/90 hover:bg-slate-700 border border-slate-600 rounded-full shadow-sm hover:shadow transition-all"
-        >
-          Explore
-        </Link>
-        <Link
-          href="/editor"
-          className="px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-[#dc2626] hover:bg-[#b91c1c] rounded-full shadow-sm hover:shadow transition-all"
-        >
-          Build
-        </Link>
+      <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pt-5">
+        <div className="inline-flex gap-1.5 rounded-full border border-sky-200/80 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
+          <Link
+            href="/map"
+            className="min-w-[7.5rem] text-center justify-center px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-sky-700 bg-white hover:bg-sky-50 border border-sky-200 rounded-full shadow-md hover:shadow-lg transition-all"
+          >
+            Explore
+          </Link>
+          <Link
+            href="/editor"
+            className="min-w-[7.5rem] text-center justify-center px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-sky-500 hover:bg-sky-600 rounded-full shadow-md hover:shadow-lg transition-all"
+          >
+            Build
+          </Link>
+        </div>
       </div>
 
       {/* Spacer so content reaches viewport when overlay is full (progress 0.5) */}
@@ -73,7 +75,7 @@ export default function Landing() {
           <img src="/thumb.jpg" alt="" className="lp-hero-img" draggable={false} />
           <div className="lp-hero-vignette" />
 
-          <h1 className="lp-hero-title">ClearPath.</h1>
+          <h1 className="lp-hero-title">ERoute.</h1>
 
           <Link href="/map" className="lp-hero-cta">
             See the Map&ensp;&rarr;
@@ -84,7 +86,7 @@ export default function Landing() {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundColor: '#1e293b',
+              backgroundColor: '#f0f9ff',
               opacity: overlayOpacity,
               zIndex: 10,
               pointerEvents: 'none',
@@ -102,7 +104,7 @@ export default function Landing() {
           position: 'sticky',
           top: 0,
           zIndex: 20,
-          backgroundColor: '#1e293b',
+          backgroundColor: '#f0f9ff',
           paddingRight: '1.5rem',
         }}
       >
@@ -124,7 +126,7 @@ export default function Landing() {
           </p>
 
           <h2 className="lp-stmt-main lp-fade" style={{ animationDelay: '0.95s' }}>
-            See the problem. <span className="lp-stmt-gold">Place the solution.</span>
+            See the problem.<br /><span className="lp-stmt-gold">Place the solution.</span>
           </h2>
 
           <Link
@@ -137,37 +139,37 @@ export default function Landing() {
         </section>
 
         {/* ───── YOUR JOURNEY ───── */}
-<section className="bg-[#334155]" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
-  <FeatureSteps
-    title="How ClearPath Works"
-    subtitle="Reducing ER congestion with data, simulation, and smart routing."
-    features={[
-      {
-        step: 'Step 1',
-        title: 'See Every ER at a Glance',
-        content:
-          "View a live 3D map of Toronto's emergency rooms. Congestion circles show real-time occupancy so you can instantly see which ERs are overwhelmed and which have capacity.",
-        image: '/carousel/busy-hospital-corridor-stockcake.jpg',
-      },
-      {
-        step: 'Step 2',
-        title: 'Place a New ER, Watch Congestion Shift',
-        content:
-          'In Government mode, drop a proposed ER anywhere on the map, set its capacity, and run a Voronoi simulation to see how patient flow redistributes across the network.',
-        image: '/carousel/NewmanRegional-Health2-600x400.jpg',
-      },
-      {
-        step: 'Step 3',
-        title: 'Get Routed to the Right ER',
-        content:
-          "In Civilian mode, answer a few triage questions and get a severity-based recommendation — nearest hospital for emergencies, least congested for non-urgent visits.",
-        image: '/carousel/istockphoto-600073876-612x612.jpg',
-      },
-    ]}
-    autoPlayInterval={4000}
-    imageHeight="h-[500px]"
-  />
-</section>
+        <section className="bg-sky-50" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
+          <FeatureSteps
+            title="How ERoute Works"
+            subtitle="Reducing ER congestion with data, simulation, and smart routing."
+            features={[
+              {
+                step: 'Step 1',
+                title: 'See Every ER at a Glance',
+                content:
+                  "View a live 3D map of Toronto's emergency rooms. Congestion circles show real-time occupancy so you can instantly see which ERs are overwhelmed and which have capacity.",
+                image: '/carousel/busy-hospital-corridor-stockcake.jpg',
+              },
+              {
+                step: 'Step 2',
+                title: 'Place a New ER, Watch Congestion Shift',
+                content:
+                  'In Government mode, drop a proposed ER anywhere on the map, set its capacity, and run a Voronoi simulation to see how patient flow redistributes across the network.',
+                image: '/carousel/NewmanRegional-Health2-600x400.jpg',
+              },
+              {
+                step: 'Step 3',
+                title: 'Get Routed to the Right ER',
+                content:
+                  "In Civilian mode, answer a few triage questions and get a severity-based recommendation — nearest hospital for emergencies, least congested for non-urgent visits.",
+                image: '/carousel/istockphoto-600073876-612x612.jpg',
+              },
+            ]}
+            autoPlayInterval={4000}
+            imageHeight="h-[500px]"
+          />
+        </section>
         {/* ───── FOOTER ───── */}
         <footer className="lp-footer">
           <a href="https://github.com/phintruong/HackCanada" target="_blank" rel="noopener noreferrer">

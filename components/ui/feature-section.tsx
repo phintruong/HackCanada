@@ -48,11 +48,11 @@ export function FeatureSteps({
   return (
     <div className={cn("p-8 md:p-12", className)}>
       <div className="max-w-7xl mx-auto w-full">
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center text-[#f1f5f9]">
+        <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 text-center text-slate-800">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-base md:text-lg text-[#94a3b8] mb-10 text-center max-w-3xl mx-auto">
+          <p className="text-base md:text-lg text-slate-600 mb-10 text-center max-w-3xl mx-auto">
             {subtitle}
           </p>
         )}
@@ -72,8 +72,8 @@ export function FeatureSteps({
                   className={cn(
                     "w-8 h-8 md:w-10 md:h-10 rounded-full flex items-center justify-center border-2 shrink-0",
                     index === currentFeature
-                      ? "bg-[#dc2626] border-[#dc2626] text-white scale-110"
-                      : "bg-[#475569] border-[#64748b] text-[#cbd5e1]",
+                      ? "bg-sky-500 border-sky-500 text-white scale-110"
+                      : "bg-sky-100 border-sky-200 text-sky-600",
                   )}
                 >
                   {index <= currentFeature ? (
@@ -84,10 +84,10 @@ export function FeatureSteps({
                 </motion.div>
 
                 <div className="flex-1">
-                  <h3 className="text-xl md:text-2xl font-semibold text-[#f1f5f9]">
+                  <h3 className="text-xl md:text-2xl font-semibold text-slate-800">
                     {feature.title || feature.step}
                   </h3>
-                  <p className="text-sm md:text-lg text-[#94a3b8]">
+                  <p className="text-sm md:text-lg text-slate-600">
                     {feature.content}
                   </p>
                 </div>
@@ -120,7 +120,7 @@ export function FeatureSteps({
                         width={1000}
                         height={500}
                       />
-                      <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-[#334155]/70 via-transparent to-transparent" />
+                      <div className="absolute bottom-0 left-0 right-0 h-1/4 bg-gradient-to-t from-slate-800/40 via-transparent to-transparent" />
                     </motion.div>
                   ),
               )}

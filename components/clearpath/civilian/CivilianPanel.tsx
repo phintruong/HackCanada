@@ -1,28 +1,48 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import VitalsCapture from './VitalsCapture';
 import SymptomCards from './SymptomCards';
 import RoutingResult from './RoutingResult';
-import { VitalsPayload, SymptomsPayload } from '@/lib/clearpath/types';
+import type { VitalsPayload, SymptomsPayload, TriageResponse, RouteResponse, ScoredHospital } from '@/lib/clearpath/types';
+
+const API_TIMEOUT_MS = 10_000;
 
 interface CivilianPanelProps {
-  onRecommendation: (result: any, routeParams?: any) => void;
+  onRecommendation: (result: RouteResponse | null, routeParams?: Record<string, unknown>) => void;
+  currentRecommendation?: RouteResponse & { activeRoute?: ScoredHospital } | null;
 }
 
 type Step = 'address' | 'vitals' | 'symptoms' | 'loading' | 'result';
 
-export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) {
+export default function CivilianPanel({ onRecommendation, currentRecommendation }: CivilianPanelProps) {
   const [step, setStep] = useState<Step>('address');
   const [postalCode, setPostalCode] = useState('');
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [vitals, setVitals] = useState<VitalsPayload | null>(null);
   const [symptoms, setSymptoms] = useState<SymptomsPayload | null>(null);
-  const [triageResult, setTriageResult] = useState<any>(null);
-  const [routeResult, setRouteResult] = useState<any>(null);
+  const [triageResult, setTriageResult] = useState<TriageResponse | null>(null);
+  const [routeResult, setRouteResult] = useState<RouteResponse | null>(null);
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Sync state when page.tsx updates recommendation (e.g. from a reroute)
+  useEffect(() => {
+    if (currentRecommendation && currentRecommendation !== routeResult) {
+      setRouteResult(currentRecommendation);
+      // If an activeRoute is set (from Show Route), use its hospital ID
+      const activeRoute = currentRecommendation.activeRoute;
+      if (activeRoute) {
+        const h = activeRoute.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
+      } else {
+        const rec = currentRecommendation.recommended as ScoredHospital | undefined;
+        const h = rec?.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
+      }
+    }
+  }, [currentRecommendation, routeResult]);
 
   const handleUseMyLocation = useCallback(() => {
     setLocating(true);
@@ -55,7 +75,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
             const res = await fetch(url);
             if (!res.ok) return;
 
-            const data: any = await res.json();
+            const data = (await res.json()) as { features?: Array<{ text?: string; properties?: { postalcode?: string }; place_name?: string }> };
             const feature = data.features?.[0];
             const code =
               feature?.text ||
@@ -96,10 +116,18 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
       setStep('loading');
       setError(null);
 
-      const effectiveVitals = vitals ?? { heartRate: 75, respiratoryRate: 16, stressIndex: 0.3 };
+      const effectiveVitals: VitalsPayload = vitals ?? { heartRate: 75, respiratoryRate: 16, stressIndex: 0.3 };
+
+      const routeBody: Record<string, unknown> = {
+        severity: undefined as TriageResponse['severity'] | undefined,
+        city: 'toronto',
+        symptoms: sym,
+      };
 
       try {
-        // Step 1: AI Triage
+        const triageController = new AbortController();
+        const triageTimeout = setTimeout(() => triageController.abort(), API_TIMEOUT_MS);
+
         const triageRes = await fetch('/api/clearpath/triage', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -108,23 +136,42 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
             symptoms: sym,
             city: 'toronto',
           }),
+          signal: triageController.signal,
         });
 
+        clearTimeout(triageTimeout);
+
         if (!triageRes.ok) {
-          setError('Triage analysis failed. Please try again.');
+          let message = 'Unable to analyze symptoms right now. Please try again.';
+          try {
+            const errBody = (await triageRes.json()) as { error?: string };
+            if (errBody?.error) message = errBody.error;
+          } catch {
+            // use default message
+          }
+          setError(message);
           setStep('symptoms');
           return;
         }
 
-        const triage = await triageRes.json();
-        setTriageResult(triage);
+        let triage: TriageResponse;
+        try {
+          const json = await triageRes.json();
+          if (json && typeof json.severity === 'string' && typeof json.reasoning === 'string') {
+            triage = { severity: json.severity, reasoning: json.reasoning };
+          } else {
+            setError('Unable to analyze symptoms right now. Please try again.');
+            setStep('symptoms');
+            return;
+          }
+        } catch {
+          setError('Unable to analyze symptoms right now. Please try again.');
+          setStep('symptoms');
+          return;
+        }
 
-        // Step 2: Smart routing with real location + symptoms
-        const routeBody: any = {
-          severity: triage.severity,
-          city: 'toronto',
-          symptoms: sym,
-        };
+        setTriageResult(triage);
+        routeBody.severity = triage.severity;
 
         if (userCoords) {
           routeBody.userLat = userCoords.lat;
@@ -132,30 +179,63 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
         } else if (postalCode.trim()) {
           routeBody.postalCode = postalCode.trim();
         } else {
-          // Fallback to downtown Toronto
           routeBody.userLat = 43.6532;
           routeBody.userLng = -79.3832;
         }
+
+        const routeController = new AbortController();
+        const routeTimeout = setTimeout(() => routeController.abort(), API_TIMEOUT_MS);
 
         const routeRes = await fetch('/api/clearpath/route', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(routeBody),
+          signal: routeController.signal,
         });
 
+        clearTimeout(routeTimeout);
+
         if (!routeRes.ok) {
+          let message = 'No hospitals found nearby. Please try again.';
+          try {
+            const errBody = (await routeRes.json()) as { error?: string };
+            if (errBody?.error) message = errBody.error;
+          } catch {
+            // use default
+          }
+          setError(message);
+          setStep('symptoms');
+          return;
+        }
+
+        let route: RouteResponse;
+        try {
+          const json = await routeRes.json();
+          if (json?.recommended && Array.isArray(json?.alternatives) && json?.userLocation) {
+            route = json as RouteResponse;
+          } else {
+            setError('No hospitals found nearby. Please try again.');
+            setStep('symptoms');
+            return;
+          }
+        } catch {
           setError('No hospitals found nearby. Please try again.');
           setStep('symptoms');
           return;
         }
 
-        const route = await routeRes.json();
         setRouteResult(route);
-        setActiveRouteId(route.recommended?.hospital?.id ?? route.recommended?.hospital?._id ?? null);
+        const rec = route.recommended;
+        const h = rec?.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
         onRecommendation(route, routeBody);
         setStep('result');
       } catch (err) {
-        setError('Failed to complete triage. Please try again.');
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError('Request took too long. Please try again.');
+        } else {
+          setError('Unable to analyze symptoms right now. Please try again.');
+        }
         setStep('symptoms');
         console.error(err);
       }
@@ -176,32 +256,28 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
   };
 
   const handleShowRoute = useCallback(
-    (scored: import('@/lib/clearpath/types').ScoredHospital) => {
+    (scored: ScoredHospital) => {
       if (!routeResult) return;
-      const hId = scored.hospital?.id ?? scored.hospital?._id ?? null;
+      const h = scored.hospital as { id?: string; _id?: string };
+      const hId = h?.id ?? h?._id ?? null;
+      if (hId && hId === activeRouteId) return;
       setActiveRouteId(hId);
-      const swapped = {
+      const updated = {
         ...routeResult,
-        recommended: scored,
-        alternatives: [
-          routeResult.recommended,
-          ...routeResult.alternatives.filter(
-            (a: any) => (a.hospital?.id ?? a.hospital?._id) !== hId
-          ),
-        ],
+        activeRoute: scored,
       };
-      onRecommendation(swapped);
+      onRecommendation(updated, undefined);
     },
-    [routeResult, onRecommendation]
+    [routeResult, activeRouteId, onRecommendation]
   );
 
   const canStart = postalCode.trim().length > 0 || userCoords !== null;
 
   return (
-    <div className="h-full bg-white/90 backdrop-blur-xl shadow-[0_18px_50px_rgba(15,23,42,0.65)] border border-white/20 rounded-3xl p-5 overflow-y-auto">
+    <div className="h-full bg-white/95 backdrop-blur-xl shadow-xl border border-sky-100 rounded-3xl p-5 overflow-y-auto">
       <div className="mb-6">
-        <h2 className="text-lg font-black text-red-700 uppercase tracking-tight">
-          ClearPath
+        <h2 className="text-lg font-black text-sky-700 uppercase tracking-tight">
+          ERoute
         </h2>
         <p className="text-xs text-slate-500 mt-1">
           Find the right ER for your situation.
@@ -225,7 +301,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
               value={postalCode}
               onChange={(e) => { setPostalCode(e.target.value); setUserCoords(null); }}
               placeholder="e.g. M5B 1W8"
-              className="w-full px-3 py-2.5 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+              className="w-full px-3 py-2.5 border border-slate-200 rounded-2xl text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
             />
           </div>
 
@@ -260,11 +336,10 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
           <button
             onClick={() => setStep('vitals')}
             disabled={!canStart}
-            className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-colors ${
-              canStart
-                ? 'bg-red-600 hover:bg-red-700 text-white'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
+            className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-colors ${canStart
+              ? 'bg-sky-500 hover:bg-sky-600 text-white'
+              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+              }`}
           >
             Start Triage
           </button>
@@ -281,7 +356,7 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
 
       {step === 'loading' && (
         <div className="flex flex-col items-center justify-center py-16">
-          <div className="w-10 h-10 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mb-4" />
+          <div className="w-10 h-10 border-4 border-sky-200 border-t-sky-500 rounded-full animate-spin mb-4" />
           <p className="text-sm font-bold text-slate-700">Analyzing your symptoms...</p>
           <p className="text-xs text-slate-400 mt-1">Computing optimal route with live traffic</p>
         </div>
@@ -304,11 +379,10 @@ export default function CivilianPanel({ onRecommendation }: CivilianPanelProps) 
           {(['address', 'vitals', 'symptoms', 'result'] as Step[]).map((s, i) => (
             <div
               key={s}
-              className={`flex-1 h-1.5 rounded-full transition-colors ${
-                (['address', 'vitals', 'symptoms', 'loading', 'result'] as Step[]).indexOf(step) >= i
-                  ? 'bg-red-500'
-                  : 'bg-slate-200'
-              }`}
+              className={`flex-1 h-1.5 rounded-full transition-colors ${(['address', 'vitals', 'symptoms', 'loading', 'result'] as Step[]).indexOf(step) >= i
+                ? 'bg-sky-500'
+                : 'bg-slate-200'
+                }`}
             />
           ))}
         </div>

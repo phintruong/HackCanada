@@ -70,7 +70,7 @@ function HospitalCard({ scored, rank, onShowRoute, isRouteActive }: { scored: Sc
 
       <p className="text-[11px] text-slate-600 leading-relaxed">{scored.reason}</p>
 
-      {rank === 1 && h.phone && (
+      {h.phone && (
         <a
           href={`tel:${h.phone}`}
           className="block w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold text-center uppercase transition-colors"

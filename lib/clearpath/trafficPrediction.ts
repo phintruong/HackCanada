@@ -193,9 +193,9 @@ export function generateRerouteAlerts(input: RerouteAlertInput): RerouteAlert[] 
     });
   }
 
-  // 3. Hospital diversion — deterministic ~8% chance per hospital+hour
+  // 3. Hospital diversion — disabled (no real diversion data source yet)
   const divSeed = `${hospitalId}-${hour}-diversion`;
-  if (seededRandom(divSeed) < 0.08) {
+  if (seededRandom(divSeed) < 0) {
     alerts.push({
       id: 'diversion',
       trigger: 'diversion',

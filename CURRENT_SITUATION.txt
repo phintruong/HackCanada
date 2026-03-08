@@ -1,0 +1,183 @@
+================================================================================
+CLEARPATH — CURRENT SITUATION
+================================================================================
+A snapshot of what is incorporated (done) vs not yet incorporated or partial.
+Based on README features, MAPBOX_3D_MAP_IMPLEMENTATION_PLAN, and codebase.
+================================================================================
+
+--------------------------------------------------------------------------------
+1. CIVILIAN MODE (Patient Routing)
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] Location detection — browser geolocation + postal code input
+  [x] Postal code geocoding via Mapbox (reverse geocode for "Use my location")
+  [x] Vitals capture — heart rate, respiratory rate, stress index (VitalsCapture)
+  [x] Symptom intake — structured symptom cards (chest pain, shortness of breath,
+      fever, dizziness, etc.) and free text (SymptomCards)
+  [x] AI-powered triage — GPT-4o-mini classifies severity (critical / urgent / non-urgent)
+  [x] Multi-factor smart routing — scores hospitals by:
+      - Live driving time (Mapbox Directions API, driving-traffic profile)
+      - Time-of-day / rush hour adjustments (temporalPatterns)
+      - ER wait time adjustments (hourly patterns)
+      - Hospital occupancy (congestion data)
+      - Specialty matching (cardiac, trauma, stroke, etc.)
+      - Severity-based weight profiles (critical vs urgent vs non-urgent)
+  [x] Top 3 recommendations with drive time, wait time, total time, reasoning
+  [x] Route visualization — recommended route (green), alternatives (dashed gray) on map
+  [x] User location marker — pulsing blue dot on map
+  [x] 911 button — shown for critical severity (RoutingResult, tel:911)
+  [x] Traffic timeline — congestion segments along route, time prediction, reroute suggestions
+
+NOT INCORPORATED / PARTIAL:
+  [ ] None identified for core civilian flow; all README-listed features are present.
+
+--------------------------------------------------------------------------------
+2. GOVERNMENT MODE (ER Planning)
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] Interactive map — click to place proposed new ER location
+  [x] Capacity slider — set bed count for proposed facility (CapacitySlider)
+  [x] Voronoi simulation — API /api/clearpath/simulate recalculates patient distribution
+  [x] Before/after analysis — SimulationResultPanel shows occupancy impact on existing hospitals
+  [x] Flow arcs — FlowArcs component visualizes patient redistribution on map
+  [x] Blueprint picker — select GLB models (small-er, medium-hospital, large-complex) for proposed site
+  [x] Suitable parcels layer — GeoJSON per city (Toronto, Mississauga, Waterloo) for suggested sites
+  [x] Traffic layer — government view traffic visualization (TrafficLayer)
+
+NOT INCORPORATED / PARTIAL:
+  [ ] None identified; government flow is implemented as described.
+
+--------------------------------------------------------------------------------
+3. MAP VISUALIZATION
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] Mapbox GL — single map at /map (no separate map-3d route; map-3d removed per plan)
+  [x] Dark theme and 3D view (pitch, bearing)
+  [x] Hospital congestion circles — color-coded by occupancy (CongestionLayer)
+  [x] Live congestion data — Ontario Open Data API with MongoDB mock fallback (congestionService)
+  [x] Hospital 3D footprints — OSM-based footprints (HospitalFootprintsLayer);
+      data: public/map-data/hospital-footprints-toronto.geojson
+  [x] Iconic landmarks 3D — fill-extrusion with height overrides (LandmarksLayer);
+      data: landmarks-toronto.geojson, landmarks-mississauga.geojson, landmarks-kitchener.geojson
+  [x] No global “all buildings” layer — addGlobalBuildings: false in createMap
+  [x] Map cleanup on unmount — map.remove() to avoid WebGL leaks
+  [x] Shared map init — lib/mapbox/createMap.ts with getFirstSymbolLayerId for layer order
+
+NOT INCORPORATED / PARTIAL:
+  [ ] Hospital footprint GeoJSON only exists for Toronto; other cities (e.g. Mississauga, Kitchener,
+      Waterloo) do not have hospital-footprints-{city}.geojson — run scripts/fetchHospitalFootprints.ts
+      per city if 3D hospital buildings are desired there.
+  [ ] Realistic 3D landmark models (e.g. CN Tower as detailed GLB) — plan notes current landmarks
+      are simplified extruded polygons; true-to-life models would require custom Mapbox layer (e.g.
+      Three.js/deck.gl) and are noted as a possible later enhancement.
+
+--------------------------------------------------------------------------------
+4. 3D BUILDING EDITOR (/editor)
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] Editor page at /editor — BuildingEditorApp (React Three Fiber)
+  [x] Export to GLB — supported for map integration (blueprints in public/map-data/blueprints/)
+  [x] Editor API — /api/editor/building and /api/editor/building/[id] for saving/loading buildings
+  [ ] Codebase also contains tree-related editor UI (e.g. TreeForm, kingstonTrees) — may be
+      an alternate or additional editor mode; treat as “editor exists” with building + possible tree flows.
+
+NOT INCORPORATED / PARTIAL:
+  [ ] Clarify scope: README describes “Create and edit 3D building models”; if tree planting
+      is a separate feature, it could be listed under “Editor” or “Future” as needed.
+
+--------------------------------------------------------------------------------
+5. API ENDPOINTS
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] GET  /api/clearpath/hospitals   — fetch hospitals by city
+  [x] GET  /api/clearpath/congestion  — real-time ER congestion
+  [x] POST /api/clearpath/triage      — AI symptom triage
+  [x] POST /api/clearpath/route       — smart multi-factor hospital routing
+  [x] POST /api/clearpath/simulate    — Voronoi simulation for new ER placement
+  [x] POST /api/clearpath/seed        — seed DB with Toronto hospitals
+  [x] POST /api/editor/building      — create building
+  [x] GET/PUT/DELETE /api/editor/building/[id] — building CRUD
+  [x] /api/speak                     — present in codebase
+  [x] /api/street-sound              — present in codebase
+
+NOT INCORPORATED / PARTIAL:
+  [ ] No gaps vs README; extra routes (speak, street-sound) are implemented.
+
+--------------------------------------------------------------------------------
+6. ROUTING ALGORITHM
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] Weighted scoring: drive time, wait time, occupancy penalty, specialty mismatch
+  [x] Severity-based weights (critical / urgent / non-urgent) as in README
+  [x] Mapbox Directions API with driving-traffic profile and congestion annotations
+  [x] Batch directions (getBatchDirections) for all hospitals from user location
+  [x] Temporal adjustments (rush hour, time-of-day) in routingService + temporalPatterns
+
+NOT INCORPORATED / PARTIAL:
+  [ ] None.
+
+--------------------------------------------------------------------------------
+7. DATA & SCRIPTS
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] MongoDB — hospitals, congestion snapshots
+  [x] Ontario Open Data — ER/congestion fetch in congestionService (with fallback)
+  [x] scripts/fetchHospitalFootprints.ts — Overpass → hospital-footprints-{city}.geojson
+  [x] public/map-data/ — hospital-footprints-toronto, landmarks-*, suitable-parcels-*,
+      blueprints/*.glb
+
+NOT INCORPORATED / PARTIAL:
+  [ ] Hospital footprint data only generated for Toronto; other cities need script run.
+  [ ] Landmarks are hand-authored or static GeoJSON; no automated fetch.
+
+--------------------------------------------------------------------------------
+8. TRAFFIC VISUALIZATION & SPAWNING (LIB)
+--------------------------------------------------------------------------------
+
+INCORPORATED (in lib; integration scope may vary):
+  [x] Traffic visualization system — vehicle renderer, turn signals, brake lights, LOD, pooling
+  [x] Spawner system — dynamic car spawning/despawning, route-based spawning
+  [x] TrafficTimeline on map — uses congestion segments from route for civilian mode
+  [x] Government TrafficLayer — uses same or related traffic visualization
+
+NOT INCORPORATED / PARTIAL:
+  [ ] These are library features; main map may not show full 100+ vehicle simulation on
+      the ClearPath map by default — confirm if full spawner/viz is desired on /map.
+
+--------------------------------------------------------------------------------
+9. PAGES & ROUTES
+--------------------------------------------------------------------------------
+
+INCORPORATED:
+  [x] /        — Landing page (hero, feature carousel)
+  [x] /map     — Main ClearPath map (civilian + government modes, all layers)
+  [x] /editor  — 3D building editor
+  [ ] No /map-3d — correctly removed; single map at /map per implementation plan.
+
+--------------------------------------------------------------------------------
+SUMMARY
+--------------------------------------------------------------------------------
+
+  Most README features are incorporated:
+  - Civilian: location, vitals, symptoms, triage, routing, top 3, routes on map, 911, timeline.
+  - Government: place ER, capacity, Voronoi, before/after, flow arcs, blueprints, suitable parcels.
+  - Map: Mapbox, dark, 3D pitch, hospital + landmark extrusions, congestion circles, no global buildings.
+  - APIs: hospitals, congestion, triage, route, simulate, seed, editor building, speak, street-sound.
+  - Editor: /editor with GLB export and building APIs.
+
+  Gaps or follow-ups:
+  1. Generate hospital-footprints-{city}.geojson for non-Toronto cities if 3D hospitals are needed.
+  2. Realistic 3D landmark models (e.g. CN Tower) would need custom layer work (future).
+  3. Traffic/spawner lib is present; confirm whether full vehicle simulation is required on /map.
+  4. Editor: clarify if tree editing is part of scope and document accordingly.
+
+================================================================================
+End of CURRENT_SITUATION.txt
+================================================================================

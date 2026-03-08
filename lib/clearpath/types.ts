@@ -18,17 +18,23 @@ export interface CongestionSnapshot {
   recordedAt: Date;
 }
 
+export interface ProposedBuildingInput {
+  lat: number;
+  lng: number;
+  capacity: number;
+}
+
 export interface SimulateRequest {
   city: string;
-  proposedLat: number;
-  proposedLng: number;
-  proposedCapacity: number;
+  proposals: ProposedBuildingInput[];
 }
 
 export interface SimulateResult {
   before: Record<string, number>;
   after: Record<string, number>;
   delta: Record<string, number>;
+  /** Occupancy for each proposed hospital (key: proposed-0, proposed-1, ...) */
+  proposedAfter?: Record<string, number>;
 }
 
 export interface VitalsPayload {
