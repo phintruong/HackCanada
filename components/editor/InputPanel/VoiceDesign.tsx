@@ -89,6 +89,16 @@ export function VoiceDesign() {
             texture: (textureReverseMap[spec.wallTexture] || 'concrete') as BuildingConfig['texture'],
             roofStyle: (roofReverseMap[spec.roofType] || 'flat') as BuildingConfig['roofStyle'],
             style: 'modern',
+            // Hospital parameters
+            hospitalBeds: spec.hospitalBeds,
+            hospitalDoctors: spec.hospitalDoctors,
+            hospitalNurses: spec.hospitalNurses,
+            hospitalRooms: spec.hospitalRooms,
+            hospitalOperatingRooms: spec.hospitalOperatingRooms,
+            hospitalEmergencyBays: spec.hospitalEmergencyBays,
+            hospitalAmbulances: spec.hospitalAmbulances,
+            hospitalTraumaRooms: spec.hospitalTraumaRooms,
+            hospitalFloors: spec.hospitalFloors,
           };
         }
 

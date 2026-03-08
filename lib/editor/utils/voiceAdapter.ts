@@ -117,5 +117,16 @@ export function applyBuildingConfig(config: BuildingConfig): Partial<BuildingSpe
     spec.wallTexture = config.texture === 'concrete' ? 'concrete' : TEXTURE_MAP[config.texture];
   }
 
+  // Hospital parameters – pass through when present
+  if (config.hospitalBeds != null) spec.hospitalBeds = config.hospitalBeds;
+  if (config.hospitalDoctors != null) spec.hospitalDoctors = config.hospitalDoctors;
+  if (config.hospitalNurses != null) spec.hospitalNurses = config.hospitalNurses;
+  if (config.hospitalRooms != null) spec.hospitalRooms = config.hospitalRooms;
+  if (config.hospitalOperatingRooms != null) spec.hospitalOperatingRooms = config.hospitalOperatingRooms;
+  if (config.hospitalEmergencyBays != null) spec.hospitalEmergencyBays = config.hospitalEmergencyBays;
+  if (config.hospitalAmbulances != null) spec.hospitalAmbulances = config.hospitalAmbulances;
+  if (config.hospitalTraumaRooms != null) spec.hospitalTraumaRooms = config.hospitalTraumaRooms;
+  if (config.hospitalFloors != null) spec.hospitalFloors = config.hospitalFloors;
+
   return spec;
 }
