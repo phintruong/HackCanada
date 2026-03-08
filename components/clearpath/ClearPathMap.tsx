@@ -126,6 +126,23 @@ export default function ClearPathMap({
   const [loadingPhase, setLoadingPhase] = useState<'loading' | 'loaded' | 'hidden'>('loading');
   const [hospitals, setHospitals] = useState<Array<{ _id?: { toString: () => string }; id?: string; name?: string; latitude?: number; longitude?: number; erBeds?: number }>>([]);
   const [congestion, setCongestion] = useState<Array<{ hospitalId: string; occupancyPct: number; waitMinutes: number }>>([]);
+  const [heatmapKey, setHeatmapKey] = useState(0);
+  const [layerVisibility, setLayerVisibility] = useState({
+    traffic: true,
+    heatmap: true,
+    trafficHeat: true,
+    flowArcs: true,
+    hospitals: true,
+  });
+  const [showLayerPanel, setShowLayerPanel] = useState(false);
+
+  const toggleLayer = (layer: keyof typeof layerVisibility) => {
+    setLayerVisibility((prev) => ({ ...prev, [layer]: !prev[layer] }));
+  };
+
+  const refreshHeatmap = () => {
+    setHeatmapKey((k) => k + 1);
+  };
   const proposedMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const recommendedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
@@ -599,14 +616,16 @@ export default function ClearPathMap({
         <React.Fragment key={styleEpoch}>
           <HospitalFootprintsLayer map={mapInstance} />
           <LandmarksLayer map={mapInstance} />
-          <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} onHospitalSelect={setSelectedHospital} simulationResult={simulationResult} />
+          {layerVisibility.hospitals && (
+            <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} onHospitalSelect={setSelectedHospital} simulationResult={simulationResult} />
+          )}
           {mode === 'government' && (
             <>
-              <TrafficLayer map={mapInstance} />
-              {!selectedBlueprint && (
+              {layerVisibility.traffic && <TrafficLayer map={mapInstance} />}
+              {layerVisibility.trafficHeat && !selectedBlueprint && (
                 <HospitalTrafficHeatLayer map={mapInstance} hospitals={hospitals} congestion={congestion} simulationResult={simulationResult} proposedLocations={proposedLocations.map((b) => ({ lat: b.lat, lng: b.lng, erBeds: b.blueprint.metadata?.erBeds }))} />
               )}
-              <CoverageHeatmapLayer map={mapInstance} hospitals={hospitals} congestion={congestion} />
+              {layerVisibility.heatmap && <CoverageHeatmapLayer key={heatmapKey} map={mapInstance} hospitals={hospitals} congestion={congestion} />}
               {selectedBlueprint && (
                 <SuitableParcelsLayer
                   map={mapInstance}
@@ -614,12 +633,14 @@ export default function ClearPathMap({
                   blueprint={selectedBlueprint}
                 />
               )}
-              <FlowArcs
-                map={mapInstance}
-                hospitals={hospitals}
-                proposedLocations={proposedLocations.map((b) => ({ lat: b.lat, lng: b.lng }))}
-                simulationResult={simulationResult}
-              />
+              {layerVisibility.flowArcs && (
+                <FlowArcs
+                  map={mapInstance}
+                  hospitals={hospitals}
+                  proposedLocations={proposedLocations.map((b) => ({ lat: b.lat, lng: b.lng }))}
+                  simulationResult={simulationResult}
+                />
+              )}
               {proposedLocations.map((b) => {
                 // Scale building size based on beds (reduced 3x for correct proportions):
                 // 50 beds -> ~40m, 150 beds -> ~67m, 400 beds -> ~107m
@@ -641,6 +662,59 @@ export default function ClearPathMap({
           )}
         </React.Fragment>
       )}
+      {/* Layer controls — bottom right */}
+      {mode === 'government' && mapReady && (
+        <div className="absolute bottom-4 right-4 z-30 flex flex-col items-end gap-2">
+          {/* Refresh heatmap button */}
+          <button
+            type="button"
+            onClick={refreshHeatmap}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-900/80 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-800/90"
+            title="Refresh heatmap"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+
+          {/* Layer toggle button */}
+          <button
+            type="button"
+            onClick={() => setShowLayerPanel((v) => !v)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-slate-900/80 text-white shadow-lg backdrop-blur-md transition hover:bg-slate-800/90"
+            title="Toggle layers"
+          >
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+          </button>
+
+          {/* Layer panel */}
+          {showLayerPanel && (
+            <div className="rounded-xl border border-white/10 bg-slate-900/90 p-3 shadow-2xl backdrop-blur-md w-52">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Map Layers</p>
+              {([
+                { key: 'traffic' as const, label: 'Traffic Lines' },
+                { key: 'heatmap' as const, label: 'Coverage Heatmap' },
+                { key: 'trafficHeat' as const, label: 'Traffic Heat Zones' },
+                { key: 'flowArcs' as const, label: 'Flow Arcs' },
+                { key: 'hospitals' as const, label: 'Hospitals' },
+              ]).map(({ key, label }) => (
+                <label key={key} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-white transition hover:bg-white/5">
+                  <input
+                    type="checkbox"
+                    checked={layerVisibility[key]}
+                    onChange={() => toggleLayer(key)}
+                    className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-sky-500 accent-sky-500"
+                  />
+                  {label}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {selectedHospital && (
         <div className="absolute top-4 right-4 z-30 w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl border border-sky-100 bg-white/95 p-4 shadow-2xl backdrop-blur">
           <button
