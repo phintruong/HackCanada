@@ -35,32 +35,52 @@ export default function MapPage() {
       ? 'mapbox://styles/mapbox/satellite-streets-v12'
       : 'mapbox://styles/mapbox/navigation-day-v1';
 
-  // Handle buildingId query param from editor export
+  // Load all saved custom buildings on mount
   useEffect(() => {
-    const buildingId = searchParams.get('buildingId');
-    if (!buildingId) return;
-
     (async () => {
       try {
         const res = await fetch('/api/editor/building');
         if (!res.ok) return;
         const { buildings } = await res.json();
-        const match = buildings.find((b: any) => b.id === buildingId);
-        if (!match) return;
-
-        const bp = createBlueprintFromBuilding(match);
-        setCustomBlueprints((prev) => {
-          if (prev.some((p) => p.id === bp.id)) return prev;
-          return [bp, ...prev];
-        });
-        setImportedBlueprint(bp);
-        setSelectedBlueprint(bp);
-        setMode('government');
+        const bps = buildings.map((b: any) => createBlueprintFromBuilding(b));
+        setCustomBlueprints(bps);
       } catch (err) {
-        console.error('Failed to load exported building:', err);
+        console.error('Failed to load custom buildings:', err);
       }
     })();
-  }, [searchParams]);
+  }, []);
+
+  // Handle buildingId query param from editor export — auto-select the imported building
+  useEffect(() => {
+    const buildingId = searchParams.get('buildingId');
+    if (!buildingId || customBlueprints.length === 0) return;
+
+    const bp = customBlueprints.find((b) => b.id === `custom-${buildingId}`);
+    if (bp && importedBlueprint?.id !== bp.id) {
+      setImportedBlueprint(bp);
+      setSelectedBlueprint(bp);
+      setMode('government');
+    }
+  }, [searchParams, customBlueprints]);
+
+  const handleRemoveCustomBlueprint = useCallback(async (bp: Blueprint) => {
+    // Extract the raw building ID (strip "custom-" prefix)
+    const rawId = bp.id.replace(/^custom-/, '');
+    try {
+      await fetch('/api/editor/building', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: rawId }),
+      });
+    } catch (err) {
+      console.error('Failed to delete building:', err);
+    }
+    setCustomBlueprints((prev) => prev.filter((b) => b.id !== bp.id));
+    if (selectedBlueprint?.id === bp.id) setSelectedBlueprint(null);
+    if (importedBlueprint?.id === bp.id) setImportedBlueprint(null);
+    // Remove any placed instances using this blueprint
+    setProposedLocations((prev) => prev.filter((loc) => loc.blueprint.id !== bp.id));
+  }, [selectedBlueprint, importedBlueprint]);
 
   const originalRouteRef = useRef<any>(null);
   const lastRouteParamsRef = useRef<any>(null);
@@ -193,6 +213,7 @@ export default function MapPage() {
               onProposedLocationsChange={setProposedLocations}
               onSimulationResult={setSimulationResult}
               onBlueprintChange={setSelectedBlueprint}
+              onRemoveCustomBlueprint={handleRemoveCustomBlueprint}
               customBlueprints={customBlueprints}
               importedBlueprint={importedBlueprint}
             />

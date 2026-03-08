@@ -168,3 +168,23 @@ export async function GET() {
     return NextResponse.json({ buildings: [] });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { id } = await request.json();
+    if (!id || typeof id !== 'string') {
+      return NextResponse.json({ error: 'Missing building id' }, { status: 400 });
+    }
+
+    const glbPath = path.join(BUILDINGS_DIR, `${id}.glb`);
+    const jsonPath = path.join(BUILDINGS_DIR, `${id}.json`);
+
+    try { await unlink(glbPath); } catch { /* may not exist */ }
+    try { await unlink(jsonPath); } catch { /* may not exist */ }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting building:', error);
+    return NextResponse.json({ error: 'Failed to delete building' }, { status: 500 });
+  }
+}

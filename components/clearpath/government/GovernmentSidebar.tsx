@@ -12,6 +12,7 @@ interface GovernmentSidebarProps {
   onProposedLocationsChange: (locations: ProposedBuilding[]) => void;
   onSimulationResult: (result: any) => void;
   onBlueprintChange?: (blueprint: Blueprint | null) => void;
+  onRemoveCustomBlueprint?: (blueprint: Blueprint) => void;
   customBlueprints?: Blueprint[];
   importedBlueprint?: Blueprint | null;
 }
@@ -22,6 +23,7 @@ export default function GovernmentSidebar({
   onProposedLocationsChange,
   onSimulationResult,
   onBlueprintChange,
+  onRemoveCustomBlueprint,
   customBlueprints = [],
   importedBlueprint,
 }: GovernmentSidebarProps) {
@@ -150,7 +152,7 @@ export default function GovernmentSidebar({
           <p className="text-[11px] text-slate-500">
             Choose a building blueprint to place on the map.
           </p>
-          <BlueprintPicker selected={selectedBlueprint} onSelect={handleBlueprintSelect} customBlueprints={customBlueprints} />
+          <BlueprintPicker selected={selectedBlueprint} onSelect={handleBlueprintSelect} onRemoveCustom={onRemoveCustomBlueprint} customBlueprints={customBlueprints} />
         </div>
 
         <div className="civ-glass rounded-2xl p-4 border border-sky-100/70 space-y-3">
