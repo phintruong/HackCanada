@@ -67,19 +67,19 @@ export function InputPanel() {
           </div>
 
           {/* Tab Bar */}
-          <div className="px-6 py-2">
-            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl">
+          <div className="px-6 py-2 overflow-x-auto">
+            <div className="flex gap-1 p-1 bg-gray-100 rounded-xl w-max min-w-full">
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  className={`whitespace-nowrap px-3 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 ${
                     activeTab === tab.id
                       ? 'bg-white text-blue-600 shadow-sm'
                       : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
                   }`}
                 >
-                  <span>{tab.label}</span>
+                  {tab.label}
                 </button>
               ))}
             </div>

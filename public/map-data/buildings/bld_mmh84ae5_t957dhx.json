@@ -1,0 +1,23 @@
+{
+  "id": "bld_mmh84ae5_t957dhx",
+  "name": "custom-building",
+  "beds": 25,
+  "metadata": {
+    "totalBeds": 178,
+    "erBeds": 25,
+    "operatingRooms": 2,
+    "traumaRooms": 1,
+    "ambulances": 5,
+    "rooms": 100,
+    "doctors": 115,
+    "nurses": 45,
+    "usableInpatientBeds": 135,
+    "usableERBays": 25,
+    "usableORs": 2,
+    "totalFloorArea": 8694,
+    "groundFloorArea": 1449,
+    "numberOfFloors": 6,
+    "createdAt": "2026-03-08T03:59:43.459Z"
+  },
+  "createdAt": "2026-03-08T03:59:43.519Z"
+}
