@@ -22,6 +22,8 @@ export interface ProposedBuildingInput {
   lat: number;
   lng: number;
   capacity: number;
+  /** ER beds from building metadata; when provided, used directly in simulation */
+  erBeds?: number;
 }
 
 export interface SimulateRequest {

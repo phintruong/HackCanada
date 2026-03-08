@@ -37,6 +37,7 @@ interface Proposal {
   lat: number;
   lng: number;
   capacity: number;
+  erBeds?: number;
   id: string;
 }
 
@@ -46,7 +47,7 @@ interface Proposal {
 export function runSimulation(
   hospitals: any[],
   snapshots: any[],
-  proposals: { lat: number; lng: number; capacity: number }[]
+  proposals: { lat: number; lng: number; capacity: number; erBeds?: number }[]
 ): SimulateResult {
   if (proposals.length === 0) {
     const before: Record<string, number> = {};
@@ -96,7 +97,8 @@ export function runSimulation(
         rawDiversion[h.id][p.id] = 0;
         continue;
       }
-      const capFactor = p.capacity / (p.capacity + h.erBeds);
+      const proposalErBeds = p.erBeds ?? Math.round(p.capacity / 2);
+      const capFactor = proposalErBeds / (proposalErBeds + h.erBeds);
       const rate = BASE_DIVERSION_RATE * decay * capFactor;
       rawDiversion[h.id][p.id] = rate * currentPatients;
     }
@@ -125,7 +127,8 @@ export function runSimulation(
   }
   for (const p of props) {
     const received = simHospitals.reduce((s, h) => s + div1[h.id][p.id], 0);
-    const cap = p.capacity * 2;
+    const proposalErBeds = p.erBeds ?? Math.round(p.capacity / 2);
+    const cap = proposalErBeds * 2;
     if (received > cap && received > 0) {
       const scale = cap / received;
       for (const h of simHospitals) {
@@ -152,7 +155,8 @@ export function runSimulation(
 
   for (const p of props) {
     const received = simHospitals.reduce((s, h) => s + (actualDiversion[h.id][p.id] ?? 0), 0);
-    const cap = p.capacity * 2;
+    const proposalErBeds = p.erBeds ?? Math.round(p.capacity / 2);
+    const cap = proposalErBeds * 2;
     proposedAfter[p.id] = Math.min(100, Math.round((received / cap) * 100));
   }
 

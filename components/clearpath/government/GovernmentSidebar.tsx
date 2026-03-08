@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import SimulationResultPanel from './SimulationResultPanel';
 import BlueprintPicker from './BlueprintPicker';
-import type { Blueprint, ProposedBuilding } from '@/lib/clearpath/blueprints';
+import type { Blueprint, BlueprintMetadata, ProposedBuilding } from '@/lib/clearpath/blueprints';
 
 interface GovernmentSidebarProps {
   cityId: string;
@@ -29,6 +29,7 @@ export default function GovernmentSidebar({
   const [simResult, setSimResult] = useState<any>(null);
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandedDetails, setExpandedDetails] = useState<Record<string, boolean>>({});
 
   // Auto-select imported blueprint when it arrives
   useEffect(() => {
@@ -66,6 +67,7 @@ export default function GovernmentSidebar({
             lat: b.lat,
             lng: b.lng,
             capacity: b.blueprint.beds,
+            erBeds: b.blueprint.metadata?.erBeds,
           })),
         }),
       });
@@ -165,6 +167,8 @@ export default function GovernmentSidebar({
             <div className="space-y-2">
               {proposedLocations.map((b) => {
                 const degrees = Math.round((b.rotation ?? 0) * (180 / Math.PI));
+                const meta = b.blueprint.metadata;
+                const isExpanded = expandedDetails[b.id] ?? false;
                 return (
                   <div key={b.id} className="rounded-lg bg-white/90 border border-sky-100 overflow-hidden p-2 space-y-2">
                     <div className="flex items-center justify-between gap-2">
@@ -179,6 +183,46 @@ export default function GovernmentSidebar({
                         Remove
                       </button>
                     </div>
+                    {/* Metadata dropdown */}
+                    {meta && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setExpandedDetails((prev) => ({ ...prev, [b.id]: !prev[b.id] }))}
+                          className="flex items-center gap-1 text-[10px] font-semibold text-sky-600 hover:text-sky-700 transition-colors"
+                        >
+                          <svg
+                            width="10"
+                            height="10"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+                          >
+                            <polyline points="9 18 15 12 9 6" />
+                          </svg>
+                          View Details
+                        </button>
+                        {isExpanded && (
+                          <div className="rounded-md bg-sky-50/80 border border-sky-100 p-2 space-y-1">
+                            <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[10px]">
+                              <MetaRow label="ER Beds" value={meta.erBeds} />
+                              <MetaRow label="Operating Rooms" value={meta.operatingRooms} />
+                              <MetaRow label="Trauma Rooms" value={meta.traumaRooms} />
+                              <MetaRow label="Rooms" value={meta.rooms} />
+                              <MetaRow label="Doctors" value={meta.doctors} />
+                              <MetaRow label="Nurses" value={meta.nurses} />
+                              <MetaRow label="Ambulances" value={meta.ambulances} />
+                              <MetaRow label="Floors" value={meta.numberOfFloors} />
+                              <MetaRow label="Floor Area" value={`${meta.totalFloorArea.toLocaleString()} m²`} />
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
                     {/* Rotation */}
                     <div>
                       <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -276,5 +320,14 @@ export default function GovernmentSidebar({
         )}
       </div>
     </div>
+  );
+}
+
+function MetaRow({ label, value }: { label: string; value: string | number }) {
+  return (
+    <>
+      <span className="text-slate-500 font-medium">{label}</span>
+      <span className="text-slate-700 font-semibold text-right">{value}</span>
+    </>
   );
 }

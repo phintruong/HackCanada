@@ -27,7 +27,7 @@ function getElevation(map: mapboxgl.Map, lng: number, lat: number): number {
   return 0;
 }
 
-export default function GLBModelLayer({ map, id, glbPath, lngLat, rotation = 0, targetSizeMeters = 150 }: GLBModelLayerProps) {
+export default function GLBModelLayer({ map, id, glbPath, lngLat, rotation = 0, targetSizeMeters = 50 }: GLBModelLayerProps) {
   const layerId = `glb-model-${id}`;
   const addedRef = useRef(false);
   const sceneRef = useRef<THREE.Scene | null>(null);

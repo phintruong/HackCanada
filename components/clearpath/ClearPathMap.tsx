@@ -591,9 +591,9 @@ export default function ClearPathMap({
                 simulationResult={simulationResult}
               />
               {proposedLocations.map((b) => {
-                // Scale realistic building size based on beds:
-                // 50 beds -> ~120m, 150 beds -> ~200m, 400 beds -> ~320m
-                const targetSize = Math.max(120, Math.min(b.blueprint.beds * 0.8 + 80, 400));
+                // Scale building size based on beds (reduced 3x for correct proportions):
+                // 50 beds -> ~40m, 150 beds -> ~67m, 400 beds -> ~107m
+                const targetSize = Math.max(40, Math.min((b.blueprint.beds * 0.8 + 80) / 3, 133));
 
                 return (
                   <GLBModelLayer

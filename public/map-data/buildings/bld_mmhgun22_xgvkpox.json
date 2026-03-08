@@ -1,5 +1,5 @@
 {
-  "id": "bld_mmhdupcl_7jymm8f",
+  "id": "bld_mmhgun22_xgvkpox",
   "name": "custom-building",
   "beds": 0,
   "metadata": {
@@ -14,10 +14,10 @@
     "usableInpatientBeds": 0,
     "usableERBays": 0,
     "usableORs": 0,
-    "totalFloorArea": 2835,
-    "groundFloorArea": 945,
+    "totalFloorArea": 2385,
+    "groundFloorArea": 795,
     "numberOfFloors": 3,
-    "createdAt": "2026-03-08T06:40:13.972Z"
+    "createdAt": "2026-03-08T08:04:09.775Z"
   },
-  "createdAt": "2026-03-08T06:40:14.039Z"
+  "createdAt": "2026-03-08T08:04:09.916Z"
 }
