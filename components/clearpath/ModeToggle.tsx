@@ -1,5 +1,7 @@
 'use client';
 
+import { motion } from 'framer-motion';
+
 interface ModeToggleProps {
   mode: 'government' | 'civilian';
   onChange: (mode: 'government' | 'civilian') => void;
@@ -7,29 +9,24 @@ interface ModeToggleProps {
 
 export default function ModeToggle({ mode, onChange }: ModeToggleProps) {
   return (
-    <div className="inline-flex items-center rounded-full bg-white/95 p-1 shadow-lg border border-slate-200/80 backdrop-blur-xl">
-      <button
-        type="button"
-        onClick={() => onChange('government')}
-        className={`flex-1 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-all ${
-          mode === 'government'
-            ? 'bg-slate-800 text-white shadow-md'
-            : 'bg-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-700'
-        }`}
-      >
-        Government
-      </button>
-      <button
-        type="button"
-        onClick={() => onChange('civilian')}
-        className={`flex-1 rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-all ${
-          mode === 'civilian'
-            ? 'bg-sky-500 text-white shadow-md'
-            : 'bg-transparent text-slate-500 hover:bg-sky-50 hover:text-sky-700'
-        }`}
-      >
-        Civilian
-      </button>
+    <div className="civ-mode-toggle">
+      {(['government', 'civilian'] as const).map((m) => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => onChange(m)}
+          className={`civ-mode-btn ${mode === m ? 'civ-mode-btn--active' : ''}`}
+        >
+          {mode === m && (
+            <motion.div
+              className="civ-mode-indicator"
+              layoutId="mode-pill"
+              transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+            />
+          )}
+          <span className="relative z-10">{m === 'government' ? 'Government' : 'Civilian'}</span>
+        </button>
+      ))}
     </div>
   );
 }

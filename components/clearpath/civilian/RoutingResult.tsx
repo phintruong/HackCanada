@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ScoredHospital } from '@/lib/clearpath/types';
 
 interface RoutingResultProps {
@@ -14,165 +15,170 @@ interface RoutingResultProps {
 }
 
 const severityConfig = {
-  critical: { bg: 'bg-red-600', text: 'text-white', label: 'CRITICAL' },
-  urgent: { bg: 'bg-orange-500', text: 'text-white', label: 'URGENT' },
-  'non-urgent': { bg: 'bg-green-500', text: 'text-white', label: 'NON-URGENT' },
+  critical: { gradient: 'from-red-600 to-red-700', label: 'CRITICAL', ring: 'ring-red-500/20' },
+  urgent: { gradient: 'from-orange-500 to-orange-600', label: 'URGENT', ring: 'ring-orange-500/20' },
+  'non-urgent': { gradient: 'from-emerald-500 to-emerald-600', label: 'NON-URGENT', ring: 'ring-emerald-500/20' },
 };
 
 function HospitalCard({ scored, rank, onShowRoute, isRouteActive }: { scored: ScoredHospital; rank: number; onShowRoute?: (scored: ScoredHospital) => void; isRouteActive?: boolean }) {
   const h = scored.hospital;
+  const isTop = rank === 1;
+
   return (
-    <div className={`bg-white border rounded-lg p-4 space-y-3 ${rank === 1 ? 'border-blue-300 shadow-md' : 'border-slate-200'}`}>
-      <div className="flex items-start justify-between">
-        <div>
-          {rank === 1 && (
-            <span className="text-[9px] font-bold text-blue-600 uppercase tracking-wider">
-              Best Match
-            </span>
-          )}
-          <p className={`font-readable font-semibold ${rank === 1 ? 'text-base text-blue-700' : 'text-sm text-slate-700'}`}>
+    <motion.div
+      className={`civ-hospital-card ${isTop ? 'civ-hospital-card--top' : ''}`}
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay: rank * 0.08 }}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          {isTop && <span className="civ-badge civ-badge--sky">Best Match</span>}
+          <p className={`font-semibold truncate ${isTop ? 'text-sm text-sky-800' : 'text-xs text-slate-700'}`}>
             {h.name}
           </p>
         </div>
-        {scored.specialtyMatch && (
-          <span className="text-[9px] px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full font-bold uppercase">
-            Specialty
-          </span>
-        )}
+        {scored.specialtyMatch && <span className="civ-badge civ-badge--purple">Specialty</span>}
       </div>
 
-      <div className={`grid ${rank === 1 ? 'grid-cols-3' : 'grid-cols-3'} gap-2`}>
-        <div className="bg-blue-50 rounded-lg p-2 text-center">
-          <p className="text-[8px] font-bold text-blue-500 uppercase">Drive</p>
-          <p className={`font-black text-blue-800 ${rank === 1 ? 'text-lg' : 'text-sm'}`}>
-            {scored.drivingTimeMinutes}m
-          </p>
-        </div>
-        <div className="bg-amber-50 rounded-lg p-2 text-center">
-          <p className="text-[8px] font-bold text-amber-500 uppercase">Wait</p>
-          <p className={`font-black text-amber-800 ${rank === 1 ? 'text-lg' : 'text-sm'}`}>
-            {scored.adjustedWaitMinutes}m
-          </p>
-        </div>
-        <div className="bg-green-50 rounded-lg p-2 text-center">
-          <p className="text-[8px] font-bold text-green-500 uppercase">Total</p>
-          <p className={`font-black text-green-800 ${rank === 1 ? 'text-lg' : 'text-sm'}`}>
-            {scored.totalEstimatedMinutes}m
-          </p>
-        </div>
+      <div className="grid grid-cols-3 gap-1.5 mt-2.5">
+        {[
+          { label: 'Drive', value: `${scored.drivingTimeMinutes}m`, bg: 'bg-sky-50/80', color: 'text-sky-700' },
+          { label: 'Wait', value: `${scored.adjustedWaitMinutes}m`, bg: 'bg-amber-50/80', color: 'text-amber-700' },
+          { label: 'Total', value: `${scored.totalEstimatedMinutes}m`, bg: 'bg-emerald-50/80', color: 'text-emerald-700' },
+        ].map((stat) => (
+          <div key={stat.label} className={`${stat.bg} rounded-lg p-1.5 text-center`}>
+            <p className="text-[7px] font-bold text-slate-400 uppercase">{stat.label}</p>
+            <p className={`font-black ${stat.color} ${isTop ? 'text-base' : 'text-sm'}`}>{stat.value}</p>
+          </div>
+        ))}
       </div>
 
-      <div className="flex items-center gap-3 text-[10px] text-slate-500">
+      <div className="flex items-center gap-2 text-[10px] text-slate-400 mt-2">
         <span>{scored.distanceKm} km</span>
-        <span>|</span>
+        <span className="text-slate-200">|</span>
         <span>{scored.occupancyPct}% full</span>
       </div>
 
-      <p className="text-[11px] text-slate-600 leading-relaxed">{scored.reason}</p>
+      <p className="text-[11px] text-slate-500 leading-relaxed mt-1.5">{scored.reason}</p>
 
       {h.phone && (
-        <a
+        <motion.a
           href={`tel:${h.phone}`}
-          className="block w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold text-center uppercase transition-colors"
+          className="civ-btn civ-btn--green w-full mt-2.5 text-center justify-center"
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
         >
           Call {h.phone}
-        </a>
+        </motion.a>
       )}
 
       {onShowRoute && !isRouteActive && (
-        <button
+        <motion.button
           onClick={() => onShowRoute(scored)}
-          className="w-full py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-lg text-[11px] font-semibold uppercase tracking-wide transition-colors flex items-center justify-center gap-1.5"
+          className="civ-btn civ-btn--location w-full mt-1.5 justify-center"
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
         >
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
           </svg>
           Show Route
-        </button>
+        </motion.button>
       )}
 
       {isRouteActive && (
-        <div className="w-full py-2 bg-green-50 text-green-700 border border-green-200 rounded-lg text-[11px] font-semibold uppercase tracking-wide flex items-center justify-center gap-1.5">
-          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
+        <div className="civ-btn civ-btn--route-active w-full mt-1.5 justify-center">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 13l4 4L19 7"/></svg>
           Route Shown
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
-export default function RoutingResult({
-  severity,
-  reasoning,
-  recommended,
-  alternatives,
-  onBack,
-  onShowRoute,
-  activeRouteId,
-}: RoutingResultProps) {
-  const [showAlternatives, setShowAlternatives] = useState(false);
+export default function RoutingResult({ severity, reasoning, recommended, alternatives, onBack, onShowRoute, activeRouteId }: RoutingResultProps) {
+  const [showAlts, setShowAlts] = useState(false);
   const config = severityConfig[severity];
 
   return (
-    <div className="space-y-4">
-      <div className={`${config.bg} rounded-lg p-4 text-center`}>
-        <p className={`text-[10px] font-bold ${config.text} uppercase tracking-widest opacity-80`}>
-          Triage Level
-        </p>
-        <p className={`text-2xl font-black ${config.text} uppercase tracking-tight`}>
-          {config.label}
-        </p>
-      </div>
+    <div className="space-y-3.5">
+      {/* Severity badge */}
+      <motion.div
+        className={`bg-gradient-to-br ${config.gradient} rounded-2xl p-4 text-center ring-4 ${config.ring}`}
+        initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      >
+        <p className="text-[9px] font-bold text-white/70 uppercase tracking-[0.15em]">Triage Level</p>
+        <p className="text-xl font-black text-white uppercase tracking-tight">{config.label}</p>
+      </motion.div>
 
-      <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-        <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">AI Assessment</p>
-        <p className="text-[11px] text-slate-700 leading-relaxed">{reasoning}</p>
-      </div>
+      {/* Reasoning */}
+      <motion.div
+        className="civ-glass rounded-xl p-3"
+        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
+      >
+        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">AI Assessment</p>
+        <p className="text-[11px] text-slate-600 leading-relaxed">{reasoning}</p>
+      </motion.div>
 
+      {/* Recommended */}
       <HospitalCard scored={recommended} rank={1} onShowRoute={onShowRoute} isRouteActive={(recommended.hospital?.id ?? (recommended.hospital as any)?._id) === activeRouteId} />
 
+      {/* Alternatives */}
       {alternatives.length > 0 && (
         <div>
-          <button
-            onClick={() => setShowAlternatives(!showAlternatives)}
-            className="w-full py-2 text-[11px] font-semibold text-slate-500 hover:text-slate-700 flex items-center justify-center gap-1 transition-colors"
+          <motion.button
+            onClick={() => setShowAlts(!showAlts)}
+            className="w-full py-2 text-[11px] font-semibold text-slate-400 hover:text-slate-600 flex items-center justify-center gap-1 transition-colors"
+            whileTap={{ scale: 0.98 }}
           >
-            {showAlternatives ? 'Hide' : 'Show'} {alternatives.length} alternative{alternatives.length > 1 ? 's' : ''}
-            <svg
-              className={`w-3 h-3 transition-transform ${showAlternatives ? 'rotate-180' : ''}`}
+            {showAlts ? 'Hide' : 'Show'} {alternatives.length} alternative{alternatives.length > 1 ? 's' : ''}
+            <motion.svg
+              className="w-3 h-3"
+              animate={{ rotate: showAlts ? 180 : 0 }}
+              transition={{ duration: 0.25 }}
               fill="none" stroke="currentColor" viewBox="0 0 24 24"
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+            </motion.svg>
+          </motion.button>
 
-          {showAlternatives && (
-            <div className="space-y-3 mt-2">
-              {alternatives.map((alt, i) => (
-                <HospitalCard key={alt.hospital.id || i} scored={alt} rank={i + 2} onShowRoute={onShowRoute} isRouteActive={(alt.hospital?.id ?? (alt.hospital as any)?._id) === activeRouteId} />
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {showAlts && (
+              <motion.div
+                className="space-y-2.5 mt-1"
+                initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.35 }}
+              >
+                {alternatives.map((alt, i) => (
+                  <HospitalCard key={alt.hospital.id || i} scored={alt} rank={i + 2} onShowRoute={onShowRoute} isRouteActive={(alt.hospital?.id ?? (alt.hospital as any)?._id) === activeRouteId} />
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
+      {/* 911 */}
       {severity === 'critical' && (
-        <a
+        <motion.a
           href="tel:911"
-          className="block w-full py-3 bg-red-700 hover:bg-red-800 text-white rounded-lg text-sm font-black text-center uppercase tracking-wide transition-colors"
+          className="civ-btn civ-btn--911 w-full text-center justify-center"
+          whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}
         >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
           Call 911
-        </a>
+        </motion.a>
       )}
 
-      <button
+      {/* Start over */}
+      <motion.button
         onClick={onBack}
-        className="w-full py-2.5 border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+        className="civ-btn civ-btn--ghost w-full justify-center"
+        whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
       >
         Start Over
-      </button>
+      </motion.button>
     </div>
   );
 }

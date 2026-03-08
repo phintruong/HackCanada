@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { useRef, useState, useEffect, useCallback } from 'react';
+import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { FeatureSteps } from '@/components/ui/feature-section';
 
 const MotionLink = motion.create(Link);
@@ -263,17 +263,8 @@ export default function Landing() {
             </div>
           </motion.div>
 
-          {/* Scroll-linked feature cards */}
-          <div className="lp-showcase-cards">
-            {showcaseFeatures.map((feat, i) => (
-              <ShowcaseCard
-                key={i}
-                label={feat.label}
-                title={feat.title}
-                description={feat.description}
-              />
-            ))}
-          </div>
+          {/* Feature carousel */}
+          <ShowcaseCarousel features={showcaseFeatures} />
         </div>
       </section>
 
@@ -328,32 +319,73 @@ export default function Landing() {
   );
 }
 
-function ShowcaseCard({
-  label,
-  title,
-  description,
-}: {
-  label: string;
-  title: string;
-  description: string;
-}) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const inView = useInView(cardRef, { margin: '-30% 0px -30% 0px' });
+function ShowcaseCarousel({ features }: { features: typeof showcaseFeatures }) {
+  const [active, setActive] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isVisible = useInView(containerRef, { margin: '-100px' });
+
+  const goTo = useCallback((idx: number) => {
+    setDirection(idx > active ? 1 : -1);
+    setActive(idx);
+  }, [active]);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    intervalRef.current = setInterval(() => {
+      setDirection(1);
+      setActive((prev) => (prev + 1) % features.length);
+    }, 4000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isVisible, features.length]);
+
+  const cardVariants = {
+    enter: (d: number) => ({ x: d > 0 ? 60 : -60, opacity: 0, scale: 0.95 }),
+    center: { x: 0, opacity: 1, scale: 1 },
+    exit: (d: number) => ({ x: d > 0 ? -60 : 60, opacity: 0, scale: 0.95 }),
+  };
 
   return (
-    <motion.div
-      ref={cardRef}
-      className="lp-showcase-card"
-      animate={{
-        opacity: inView ? 1 : 0.3,
-        y: inView ? 0 : 12,
-        scale: inView ? 1 : 0.97,
-      }}
-      transition={{ duration: 0.5, ease }}
-    >
-      <span className="lp-showcase-card-label">{label}</span>
-      <h3 className="lp-showcase-card-title">{title}</h3>
-      <p className="lp-showcase-card-desc">{description}</p>
-    </motion.div>
+    <div ref={containerRef} className="lp-carousel">
+      <div className="lp-carousel-viewport">
+        <AnimatePresence mode="wait" custom={direction}>
+          <motion.div
+            key={active}
+            custom={direction}
+            variants={cardVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{ duration: 0.4, ease }}
+            className="lp-showcase-card"
+          >
+            <span className="lp-showcase-card-label">{features[active].label}</span>
+            <h3 className="lp-showcase-card-title">{features[active].title}</h3>
+            <p className="lp-showcase-card-desc">{features[active].description}</p>
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Dots */}
+      <div className="lp-carousel-dots">
+        {features.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`lp-carousel-dot ${i === active ? 'lp-carousel-dot--active' : ''}`}
+            aria-label={`Go to slide ${i + 1}`}
+          >
+            {i === active && (
+              <motion.div
+                className="lp-carousel-dot-fill"
+                layoutId="carousel-dot"
+                transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+              />
+            )}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }

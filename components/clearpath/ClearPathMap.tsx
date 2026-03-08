@@ -12,6 +12,7 @@ import TrafficLayer from './government/TrafficLayer';
 import GLBModelLayer from './government/GLBModelLayer';
 import SuitableParcelsLayer from './government/SuitableParcelsLayer';
 import CoverageHeatmapLayer from './government/CoverageHeatmapLayer';
+import type { HospitalStatsPanelData } from './CongestionLayer';
 import type { CityConfig } from '@/lib/map-3d/types';
 import type { TimelinePrediction } from '@/lib/clearpath/trafficPrediction';
 import type { Blueprint, ProposedBuilding } from '@/lib/clearpath/blueprints';
@@ -57,6 +58,20 @@ const CONGESTION_SPEED: Record<string, number> = {
   severe: 0.2,
   unknown: 1.8,
 };
+
+function getOccupancyLabel(pct: number): string {
+  if (pct < 40) return 'Low';
+  if (pct < 60) return 'Moderate';
+  if (pct < 80) return 'High';
+  return 'Critical';
+}
+
+function getOccupancyColor(pct: number): string {
+  if (pct < 40) return '#22c55e';
+  if (pct < 60) return '#eab308';
+  if (pct < 80) return '#f97316';
+  return '#dc2626';
+}
 
 function buildTrafficSegments(
   coordinates: [number, number][],
@@ -105,6 +120,7 @@ export default function ClearPathMap({
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  const [selectedHospital, setSelectedHospital] = useState<HospitalStatsPanelData | null>(null);
   const [hospitals, setHospitals] = useState<Array<{ _id?: { toString: () => string }; id?: string; name?: string; latitude?: number; longitude?: number; erBeds?: number }>>([]);
   const [congestion, setCongestion] = useState<Array<{ hospitalId: string; occupancyPct: number; waitMinutes: number }>>([]);
   const proposedMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -129,6 +145,7 @@ export default function ClearPathMap({
       pitch: 45,
       bearing: -17.6,
       addGlobalBuildings: false,
+      style: mapStyle,
     });
 
     map.on('load', () => {
@@ -160,7 +177,7 @@ export default function ClearPathMap({
       setMapInstance(null);
       setMapReady(false);
     };
-  }, []);
+  }, [mapStyle]);
 
   // Switch styles when mapStyle changes (skip initial render — constructor already set the style)
   const prevStyleRef = useRef(mapStyle);
@@ -199,6 +216,7 @@ export default function ClearPathMap({
     if (!map || !mapReady) return;
     if (prevCityIdRef.current === cityId) return;
     prevCityIdRef.current = cityId;
+    setSelectedHospital(null);
     map.flyTo({
       center: cityConfig.center,
       zoom: cityConfig.zoom ?? 11.5,
@@ -538,7 +556,7 @@ export default function ClearPathMap({
         <>
           <HospitalFootprintsLayer map={mapInstance} />
           <LandmarksLayer map={mapInstance} />
-          <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} />
+          <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} onHospitalSelect={setSelectedHospital} />
           {mode === 'government' && (
             <>
               <TrafficLayer map={mapInstance} />
@@ -569,6 +587,64 @@ export default function ClearPathMap({
             </>
           )}
         </>
+      )}
+      {selectedHospital && (
+        <div className="absolute top-4 right-4 z-30 w-[340px] max-w-[calc(100vw-2rem)] rounded-2xl border border-sky-100 bg-white/95 p-4 shadow-2xl backdrop-blur">
+          <button
+            type="button"
+            onClick={() => setSelectedHospital(null)}
+            className="absolute right-2 top-2 h-7 w-7 rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Close hospital details"
+          >
+            ×
+          </button>
+          <p className="pr-8 text-2xl font-extrabold text-slate-900">{selectedHospital.name}</p>
+          <div className="mt-5">
+            <div className="mb-1 flex items-center justify-between text-sm">
+              <span className="text-slate-500">Occupancy</span>
+              <span style={{ color: getOccupancyColor(selectedHospital.occupancyPct) }} className="font-bold">
+                {selectedHospital.occupancyPct}% - {getOccupancyLabel(selectedHospital.occupancyPct)}
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full rounded-full"
+                style={{
+                  width: `${selectedHospital.occupancyPct}%`,
+                  backgroundColor: getOccupancyColor(selectedHospital.occupancyPct),
+                }}
+              />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-3 text-center">
+              <p className="text-4xl font-black text-slate-900">{selectedHospital.erBeds}</p>
+              <p className="text-xs uppercase tracking-widest text-slate-500">ER Beds</p>
+            </div>
+            <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-3 text-center">
+              <p className="text-4xl font-black text-slate-900">{selectedHospital.totalBeds}</p>
+              <p className="text-xs uppercase tracking-widest text-slate-500">Total Beds</p>
+            </div>
+          </div>
+          {selectedHospital.specialties.length > 0 && (
+            <div className="mt-5">
+              <p className="mb-2 text-sm uppercase tracking-widest text-slate-500">Specialties</p>
+              <div className="flex flex-wrap gap-2">
+                {selectedHospital.specialties.map((specialty) => (
+                  <span key={specialty} className="rounded-full border border-sky-100 bg-sky-50/60 px-3 py-1 text-sm font-semibold text-slate-700">
+                    {specialty}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {selectedHospital.phone && (
+            <a href={`tel:${selectedHospital.phone}`} className="mt-5 inline-flex items-center gap-2 text-3xl font-medium text-sky-500 hover:text-sky-600">
+              <span aria-hidden>📞</span>
+              {selectedHospital.phone}
+            </a>
+          )}
+        </div>
       )}
       <style jsx global>{`
         @keyframes pulse-ring {

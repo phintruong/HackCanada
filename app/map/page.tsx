@@ -18,7 +18,8 @@ export default function MapPage() {
   const searchParams = useSearchParams();
   const initialMode = searchParams.get('mode') === 'government' ? 'government' : searchParams.get('mode') === 'civilian' ? 'civilian' : 'civilian';
   const [mode, setMode] = useState<'government' | 'civilian'>(initialMode);
-  const [selectedCity, setSelectedCity] = useState(() => CITIES[0]);
+  const [selectedCity, setSelectedCity] = useState<typeof CITIES[0] | null>(null);
+  const mapCity = selectedCity ?? CITIES[0];
   const [simulationResult, setSimulationResult] = useState(null);
   const [recommendedHospital, setRecommendedHospital] = useState<any>(null);
   const [proposedLocations, setProposedLocations] = useState<ProposedBuilding[]>([]);
@@ -27,7 +28,7 @@ export default function MapPage() {
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
   const [customBlueprints, setCustomBlueprints] = useState<Blueprint[]>([]);
   const [importedBlueprint, setImportedBlueprint] = useState<Blueprint | null>(null);
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(false);
   const mapStyle = isDark
     ? 'mapbox://styles/mapbox/navigation-night-v1'
     : 'mapbox://styles/mapbox/satellite-streets-v12';
@@ -77,7 +78,7 @@ export default function MapPage() {
     );
   }, []);
 
-  const handleCityChange = useCallback((city: (typeof CITIES)[0]) => {
+  const handleCityChange = useCallback((city: (typeof CITIES)[0] | null) => {
     setSelectedCity(city);
   }, []);
 
@@ -146,8 +147,8 @@ export default function MapPage() {
     <div className='fixed inset-0 overflow-hidden'>
       <ClearPathMap
         mode={mode}
-        cityId={selectedCity.id}
-        cityConfig={selectedCity}
+        cityId={mapCity.id}
+        cityConfig={mapCity}
         simulationResult={simulationResult}
         recommendedHospital={recommendedHospital}
         onMapClick={handleMapClick}
@@ -158,30 +159,34 @@ export default function MapPage() {
         selectedBlueprint={selectedBlueprint}
         mapStyle={mapStyle}
       />
-      <div className='absolute top-0 left-0 w-md z-10 flex flex-col gap-3 p-4 max-h-screen overflow-y-auto'>
+      <div className='cp-map-rail'>
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-sky-700 hover:text-sky-800 text-left rounded-full px-3 py-2 -ml-1 hover:bg-white/80 transition-colors"
+          className="cp-back-btn"
           aria-label="Back to home"
         >
-          <span aria-hidden>←</span>
-          Back
+          <span className="cp-back-btn__icon" aria-hidden>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </span>
+          <span>Back to Home</span>
         </Link>
         {!searchParams.get('mode') && (
           <ModeToggle mode={mode} onChange={handleModeChange} />
         )}
-        <div className="flex items-center gap-2">
+        <div className="cp-map-controls-row">
           <CitySelector
             cities={CITIES}
-            currentCityId={selectedCity.id}
+            currentCityId={selectedCity?.id ?? ''}
             onCityChange={handleCityChange}
           />
           <DayNightToggle isDark={isDark} onToggle={() => setIsDark((d) => !d)} />
         </div>
-        <div className='flex-1 min-h-0'>
+        <div className='cp-map-panel-wrap'>
           {mode === 'government' ? (
             <GovernmentSidebar
-              cityId={selectedCity.id}
+              cityId={mapCity.id}
               proposedLocations={proposedLocations}
               onProposedLocationsChange={setProposedLocations}
               onSimulationResult={setSimulationResult}
@@ -189,11 +194,30 @@ export default function MapPage() {
               customBlueprints={customBlueprints}
               importedBlueprint={importedBlueprint}
             />
-          ) : (
+          ) : selectedCity ? (
             <CivilianPanel
+              cityId={selectedCity.id}
               onRecommendation={handleRecommendation}
               currentRecommendation={recommendedHospital}
             />
+          ) : (
+            <div className="civ-panel civ-panel--pick-location">
+              <div className="civ-header">
+                <div className="civ-header-icon" aria-hidden>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+                    <circle cx="12" cy="10" r="3" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="civ-header-title">ERoute</h2>
+                  <p className="civ-header-sub">Find the right ER for your situation</p>
+                </div>
+              </div>
+              <p className="civ-pick-location-message">
+                Please select a location above (Toronto, Waterloo, or Mississauga) to get started.
+              </p>
+            </div>
           )}
         </div>
       </div>
