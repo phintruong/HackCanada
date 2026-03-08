@@ -1,0 +1,23 @@
+{
+  "id": "bld_mmh8rty8_4lzvlfb",
+  "name": "custom-building",
+  "beds": 0,
+  "metadata": {
+    "totalBeds": 0,
+    "erBeds": 0,
+    "operatingRooms": 0,
+    "traumaRooms": 0,
+    "ambulances": 0,
+    "rooms": 0,
+    "doctors": 0,
+    "nurses": 0,
+    "usableInpatientBeds": 0,
+    "usableERBays": 0,
+    "usableORs": 0,
+    "totalFloorArea": 900,
+    "groundFloorArea": 300,
+    "numberOfFloors": 3,
+    "createdAt": "2026-03-08T04:18:01.585Z"
+  },
+  "createdAt": "2026-03-08T04:18:01.957Z"
+}

@@ -2,12 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import VitalsCapture from './VitalsCapture';
-import SymptomCards from './SymptomCards';
+import VoiceTriage from './VoiceTriage';
 import RoutingResult from './RoutingResult';
-import type { VitalsPayload, SymptomsPayload, TriageResponse, RouteResponse, ScoredHospital } from '@/lib/clearpath/types';
+import type { TriageResponse, RouteResponse, ScoredHospital } from '@/lib/clearpath/types';
 
-const API_TIMEOUT_MS = 10_000;
+const API_TIMEOUT_MS = 15_000;
 
 const slideVariants = {
   enter: (dir: number) => ({ x: dir > 0 ? 80 : -80, opacity: 0 }),
@@ -21,19 +20,17 @@ interface CivilianPanelProps {
   currentRecommendation?: RouteResponse & { activeRoute?: ScoredHospital } | null;
 }
 
-type Step = 'address' | 'vitals' | 'symptoms' | 'loading' | 'result';
-const STEP_ORDER: Step[] = ['address', 'vitals', 'symptoms', 'loading', 'result'];
+type Step = 'location' | 'conversation' | 'loading' | 'result';
+const STEP_ORDER: Step[] = ['location', 'conversation', 'loading', 'result'];
 
 function stepIndex(s: Step) { return STEP_ORDER.indexOf(s); }
 
 export default function CivilianPanel({ cityId, onRecommendation, currentRecommendation }: CivilianPanelProps) {
-  const [step, setStep] = useState<Step>('address');
+  const [step, setStep] = useState<Step>('location');
   const [direction, setDirection] = useState(1);
   const [postalCode, setPostalCode] = useState('');
   const [userCoords, setUserCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locating, setLocating] = useState(false);
-  const [vitals, setVitals] = useState<VitalsPayload | null>(null);
-  const [symptoms, setSymptoms] = useState<SymptomsPayload | null>(null);
   const [triageResult, setTriageResult] = useState<TriageResponse | null>(null);
   const [routeResult, setRouteResult] = useState<RouteResponse | null>(null);
   const [activeRouteId, setActiveRouteId] = useState<string | null>(null);
@@ -75,7 +72,12 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
           try {
             const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
             if (!token) return;
-            const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${coords.lng},${coords.lat}.json?country=ca&types=postcode&limit=1&access_token=${token}`;
+
+            const url =
+              `https://api.mapbox.com/geocoding/v5/mapbox.places/` +
+              `${coords.lng},${coords.lat}.json` +
+              `?country=ca&types=postcode&limit=1&access_token=${token}`;
+
             const res = await fetch(url);
             if (!res.ok) return;
             const data = (await res.json()) as { features?: Array<{ text?: string; properties?: { postalcode?: string }; place_name?: string }> };
@@ -91,92 +93,117 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
     );
   }, []);
 
-  const handleVitalsComplete = useCallback((v: VitalsPayload) => { setVitals(v); goTo('symptoms'); }, [goTo]);
-  const handleVitalsSkip = useCallback(() => { setVitals({ heartRate: 75, respiratoryRate: 16, stressIndex: 0.3 }); goTo('symptoms'); }, [goTo]);
+  // When voice triage is complete, route the patient
+  const handleTriageComplete = useCallback(
+    async (triage: { severity: 'critical' | 'urgent' | 'non-urgent'; reasoning: string; symptoms: { chestPain: boolean; shortnessOfBreath: boolean; fever: boolean; dizziness: boolean; freeText?: string } | null }) => {
+      setTriageResult({ severity: triage.severity, reasoning: triage.reasoning });
+      goTo('loading');
+      setError(null);
 
-  const handleSymptomsComplete = useCallback(async (sym: SymptomsPayload) => {
-    setSymptoms(sym);
-    goTo('loading');
-    setError(null);
-    const effectiveVitals: VitalsPayload = vitals ?? { heartRate: 75, respiratoryRate: 16, stressIndex: 0.3 };
-    const routeBody: Record<string, unknown> = { severity: undefined as TriageResponse['severity'] | undefined, city: cityId, symptoms: sym };
+      const routeBody: Record<string, unknown> = {
+        severity: triage.severity,
+        city: cityId,
+        symptoms: triage.symptoms || {
+          chestPain: false,
+          shortnessOfBreath: false,
+          fever: false,
+          dizziness: false,
+          freeText: triage.reasoning,
+        },
+      };
 
-    try {
-      const triageController = new AbortController();
-      const triageTimeout = setTimeout(() => triageController.abort(), API_TIMEOUT_MS);
-      const triageRes = await fetch('/api/clearpath/triage', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ vitals: effectiveVitals, symptoms: sym, city: cityId }),
-        signal: triageController.signal,
-      });
-      clearTimeout(triageTimeout);
-      if (!triageRes.ok) {
-        let message = 'Unable to analyze symptoms right now.';
-        try { const errBody = (await triageRes.json()) as { error?: string }; if (errBody?.error) message = errBody.error; } catch {}
-        setError(message); goTo('symptoms'); return;
+      if (userCoords) {
+        routeBody.userLat = userCoords.lat;
+        routeBody.userLng = userCoords.lng;
+      } else if (postalCode.trim()) {
+        routeBody.postalCode = postalCode.trim();
+      } else {
+        routeBody.userLat = 43.6532;
+        routeBody.userLng = -79.3832;
       }
-      let triage: TriageResponse;
+
       try {
-        const json = await triageRes.json();
-        if (json && typeof json.severity === 'string' && typeof json.reasoning === 'string') { triage = { severity: json.severity, reasoning: json.reasoning }; }
-        else { setError('Unable to analyze symptoms right now.'); goTo('symptoms'); return; }
-      } catch { setError('Unable to analyze symptoms right now.'); goTo('symptoms'); return; }
+        const routeController = new AbortController();
+        const routeTimeout = setTimeout(() => routeController.abort(), API_TIMEOUT_MS);
 
-      setTriageResult(triage);
-      routeBody.severity = triage.severity;
-      if (userCoords) { routeBody.userLat = userCoords.lat; routeBody.userLng = userCoords.lng; }
-      else if (postalCode.trim()) { routeBody.postalCode = postalCode.trim(); }
-      else { routeBody.userLat = 43.6532; routeBody.userLng = -79.3832; }
+        const routeRes = await fetch('/api/clearpath/route', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(routeBody),
+          signal: routeController.signal,
+        });
 
-      const routeController = new AbortController();
-      const routeTimeout = setTimeout(() => routeController.abort(), API_TIMEOUT_MS);
-      const routeRes = await fetch('/api/clearpath/route', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(routeBody), signal: routeController.signal,
-      });
-      clearTimeout(routeTimeout);
-      if (!routeRes.ok) {
-        let message = 'No hospitals found nearby.';
-        try { const errBody = (await routeRes.json()) as { error?: string }; if (errBody?.error) message = errBody.error; } catch {}
-        setError(message); goTo('symptoms'); return;
+        clearTimeout(routeTimeout);
+
+        if (!routeRes.ok) {
+          let message = 'No hospitals found nearby. Please try again.';
+          try {
+            const errBody = (await routeRes.json()) as { error?: string };
+            if (errBody?.error) message = errBody.error;
+          } catch { /* use default */ }
+          setError(message);
+          goTo('conversation');
+          return;
+        }
+
+        let route: RouteResponse;
+        try {
+          const json = await routeRes.json();
+          if (json?.recommended && Array.isArray(json?.alternatives) && json?.userLocation) {
+            route = json as RouteResponse;
+          } else {
+            setError('No hospitals found nearby. Please try again.');
+            goTo('conversation');
+            return;
+          }
+        } catch {
+          setError('No hospitals found nearby. Please try again.');
+          goTo('conversation');
+          return;
+        }
+
+        setRouteResult(route);
+        const rec = route.recommended;
+        const h = rec?.hospital as { id?: string; _id?: string } | undefined;
+        setActiveRouteId(h?.id ?? h?._id ?? null);
+        onRecommendation(route, routeBody);
+        goTo('result');
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          setError('Request took too long. Please try again.');
+        } else {
+          setError('Unable to find hospitals right now. Please try again.');
+        }
+        goTo('conversation');
+        console.error(err);
       }
-      let route: RouteResponse;
-      try {
-        const json = await routeRes.json();
-        if (json?.recommended && Array.isArray(json?.alternatives) && json?.userLocation) { route = json as RouteResponse; }
-        else { setError('No hospitals found nearby.'); goTo('symptoms'); return; }
-      } catch { setError('No hospitals found nearby.'); goTo('symptoms'); return; }
-
-      setRouteResult(route);
-      const rec = route.recommended;
-      const h = rec?.hospital as { id?: string; _id?: string } | undefined;
-      setActiveRouteId(h?.id ?? h?._id ?? null);
-      onRecommendation(route, routeBody);
-      goTo('result');
-    } catch (err) {
-      if (err instanceof Error && err.name === 'AbortError') setError('Request took too long.');
-      else setError('Unable to analyze symptoms right now.');
-      goTo('symptoms');
-      console.error(err);
-    }
-  }, [cityId, vitals, userCoords, postalCode, onRecommendation, goTo]);
+    },
+    [cityId, userCoords, postalCode, onRecommendation, goTo]
+  );
 
   const resetFlow = () => {
     setDirection(-1);
-    setStep('address');
-    setVitals(null); setSymptoms(null); setTriageResult(null);
-    setRouteResult(null); setActiveRouteId(null); setUserCoords(null); setError(null);
+    setStep('location');
+    setTriageResult(null);
+    setRouteResult(null);
+    setActiveRouteId(null);
+    setUserCoords(null);
+    setError(null);
     onRecommendation(null);
   };
 
-  const handleShowRoute = useCallback((scored: ScoredHospital) => {
-    if (!routeResult) return;
-    const h = scored.hospital as { id?: string; _id?: string };
-    const hId = h?.id ?? h?._id ?? null;
-    if (hId && hId === activeRouteId) return;
-    setActiveRouteId(hId);
-    onRecommendation({ ...routeResult, activeRoute: scored } as any, undefined);
-  }, [routeResult, activeRouteId, onRecommendation]);
+  const handleShowRoute = useCallback(
+    (scored: ScoredHospital) => {
+      if (!routeResult) return;
+      const h = scored.hospital as { id?: string; _id?: string };
+      const hId = h?.id ?? h?._id ?? null;
+      if (hId && hId === activeRouteId) return;
+      setActiveRouteId(hId);
+      const updated = { ...routeResult, activeRoute: scored };
+      onRecommendation(updated, undefined);
+    },
+    [routeResult, activeRouteId, onRecommendation]
+  );
 
   const canStart = postalCode.trim().length > 0 || userCoords !== null;
   const currentStepIdx = stepIndex(step);
@@ -212,8 +239,8 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
       {/* Step content */}
       <div className="civ-body">
         <AnimatePresence mode="wait" custom={direction}>
-          {step === 'address' && (
-            <motion.div key="address" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+          {step === 'location' && (
+            <motion.div key="location" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
               <div className="space-y-3.5">
                 <div className="civ-field-group">
                   <label className="civ-label">Your Postal Code</label>
@@ -250,7 +277,7 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
                   </motion.button>
 
                   <motion.button
-                    onClick={() => goTo('vitals')}
+                    onClick={() => goTo('conversation')}
                     disabled={!canStart}
                     className={`civ-btn civ-btn--primary w-full justify-center ${!canStart ? 'civ-btn--disabled' : ''}`}
                     whileHover={canStart ? { scale: 1.01, y: -1 } : {}}
@@ -263,15 +290,9 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
             </motion.div>
           )}
 
-          {step === 'vitals' && (
-            <motion.div key="vitals" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-              <VitalsCapture onComplete={handleVitalsComplete} onSkip={handleVitalsSkip} />
-            </motion.div>
-          )}
-
-          {step === 'symptoms' && (
-            <motion.div key="symptoms" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-              <SymptomCards onComplete={handleSymptomsComplete} />
+          {step === 'conversation' && (
+            <motion.div key="conversation" custom={direction} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
+              <VoiceTriage onTriageComplete={handleTriageComplete} />
             </motion.div>
           )}
 
@@ -283,7 +304,7 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
                   animate={{ rotate: 360 }}
                   transition={{ repeat: Infinity, duration: 1, ease: 'linear' }}
                 />
-                <p className="text-sm font-bold text-slate-700 mt-4">Analyzing your symptoms...</p>
+                <p className="text-sm font-bold text-slate-700 mt-4">Finding the best ER for you...</p>
                 <p className="text-xs text-slate-400 mt-1">Computing optimal route with live traffic</p>
               </div>
             </motion.div>
@@ -305,10 +326,11 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
         </AnimatePresence>
       </div>
 
+
       {/* Progress */}
       <div className="civ-progress">
         <div className="civ-progress-bar">
-          {(['address', 'vitals', 'symptoms', 'result'] as Step[]).map((s, i) => (
+          {(['location', 'conversation', 'result'] as Step[]).map((s, i) => (
             <motion.div
               key={s}
               className="civ-progress-segment"
@@ -318,11 +340,10 @@ export default function CivilianPanel({ cityId, onRecommendation, currentRecomme
           ))}
         </div>
         <p className="civ-progress-label">
-          {step === 'address' && 'Step 1 of 4 — Location'}
-          {step === 'vitals' && 'Step 2 of 4 — Vitals'}
-          {step === 'symptoms' && 'Step 3 of 4 — Symptoms'}
-          {step === 'loading' && 'Processing...'}
-          {step === 'result' && 'Step 4 of 4 — Result'}
+          {step === 'location' && 'Step 1 of 3 — Location'}
+          {step === 'conversation' && 'Step 2 of 3 — Tell us what happened'}
+          {step === 'loading' && 'Finding your ER...'}
+          {step === 'result' && 'Step 3 of 3 — Result'}
         </p>
       </div>
     </div>

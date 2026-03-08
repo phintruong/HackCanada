@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { classifyTriage } from '@/lib/clearpath/geminiService';
-import { validateVitals } from '@/lib/clearpath/presageService';
+import { classifyTriage } from '@/lib/clearpath/chatgptService';
 import type { VitalsPayload, SymptomsPayload } from '@/lib/clearpath/types';
 
 function isVitalsPayload(v: unknown): v is VitalsPayload {
@@ -22,6 +21,16 @@ function isSymptomsPayload(v: unknown): v is SymptomsPayload {
     typeof o.fever === 'boolean' &&
     typeof o.dizziness === 'boolean'
   );
+}
+
+function validateVitals(raw: VitalsPayload): VitalsPayload {
+  if (raw.heartRate < 30 || raw.heartRate > 220)
+    throw new Error('Heart rate out of valid range');
+  if (raw.respiratoryRate < 5 || raw.respiratoryRate > 60)
+    throw new Error('Respiratory rate out of valid range');
+  if (raw.stressIndex < 0 || raw.stressIndex > 1)
+    throw new Error('Stress index must be 0–1');
+  return raw;
 }
 
 export async function POST(req: NextRequest) {

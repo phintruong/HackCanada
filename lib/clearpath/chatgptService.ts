@@ -10,13 +10,13 @@ Return ONLY JSON in this format: { "severity": "critical | urgent | non-urgent",
 Reasoning must be under 2 sentences.
 Always end with: This is guidance only — not a medical diagnosis.`;
 
-export class GeminiTriageError extends Error {
+export class ChatGPTTriageError extends Error {
   constructor(
     message: string,
     public readonly code: 'INVALID_JSON' | 'INVALID_SCHEMA' | 'API_ERROR'
   ) {
     super(message);
-    this.name = 'GeminiTriageError';
+    this.name = 'ChatGPTTriageError';
   }
 }
 
@@ -56,19 +56,19 @@ function extractJSONString(text: string): string {
 }
 
 /**
- * Parse and validate model JSON response. Throws GeminiTriageError if invalid.
+ * Parse and validate model JSON response. Throws ChatGPTTriageError if invalid.
  */
-export function safeParseGeminiJSON(text: string): TriageResponse {
+export function safeParseTriageJSON(text: string): TriageResponse {
   const raw = extractJSONString(text);
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new GeminiTriageError('Invalid JSON in model response', 'INVALID_JSON');
+    throw new ChatGPTTriageError('Invalid JSON in model response', 'INVALID_JSON');
   }
 
   if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new GeminiTriageError('Response is not a JSON object', 'INVALID_SCHEMA');
+    throw new ChatGPTTriageError('Response is not a JSON object', 'INVALID_SCHEMA');
   }
 
   const obj = parsed as Record<string, unknown>;
@@ -76,14 +76,14 @@ export function safeParseGeminiJSON(text: string): TriageResponse {
   const reasoning = obj.reasoning;
 
   if (typeof severity !== 'string' || !VALID_SEVERITIES.includes(severity as TriageResponse['severity'])) {
-    throw new GeminiTriageError(
+    throw new ChatGPTTriageError(
       `Invalid severity: must be one of ${VALID_SEVERITIES.join(', ')}`,
       'INVALID_SCHEMA'
     );
   }
 
   if (typeof reasoning !== 'string') {
-    throw new GeminiTriageError('reasoning must be a string', 'INVALID_SCHEMA');
+    throw new ChatGPTTriageError('reasoning must be a string', 'INVALID_SCHEMA');
   }
 
   const trimmedReasoning = reasoning.length > MAX_REASONING_LENGTH
@@ -102,7 +102,7 @@ export async function classifyTriage(
 ): Promise<TriageResponse> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new GeminiTriageError('OPENAI_API_KEY is not set', 'API_ERROR');
+    throw new ChatGPTTriageError('OPENAI_API_KEY is not set', 'API_ERROR');
   }
 
   const openai = new OpenAI({ apiKey });
@@ -112,7 +112,7 @@ export async function classifyTriage(
     `Vitals: HR=${vitals.heartRate} RR=${vitals.respiratoryRate} Stress=${vitals.stressIndex}\n` +
     `Symptoms: ${JSON.stringify(symptoms)}`;
 
-  let lastError: GeminiTriageError | null = null;
+  let lastError: ChatGPTTriageError | null = null;
 
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
@@ -128,24 +128,24 @@ export async function classifyTriage(
       const text = result.choices[0]?.message?.content;
 
       if (!text) {
-        throw new GeminiTriageError('Empty response from model', 'INVALID_JSON');
+        throw new ChatGPTTriageError('Empty response from model', 'INVALID_JSON');
       }
 
-      return safeParseGeminiJSON(text);
+      return safeParseTriageJSON(text);
     } catch (err) {
-      if (err instanceof GeminiTriageError) {
+      if (err instanceof ChatGPTTriageError) {
         lastError = err;
         if (err.code === 'INVALID_JSON' && attempt === 0) {
           continue;
         }
         throw err;
       }
-      throw new GeminiTriageError(
+      throw new ChatGPTTriageError(
         err instanceof Error ? err.message : 'OpenAI API request failed',
         'API_ERROR'
       );
     }
   }
 
-  throw lastError ?? new GeminiTriageError('Failed to parse model response after retry', 'INVALID_JSON');
+  throw lastError ?? new ChatGPTTriageError('Failed to parse model response after retry', 'INVALID_JSON');
 }
