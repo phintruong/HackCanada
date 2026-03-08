@@ -10,19 +10,21 @@ function haversine(lat1: number, lng1: number, lat2: number, lng2: number): numb
 }
 
 // Only hospitals within this radius (km) are affected by the proposed hospital.
-const MAX_EFFECT_RADIUS_KM = 100;
+const MAX_EFFECT_RADIUS_KM = 15;
 
 // Base diversion rate – the theoretical maximum fraction of a hospital's
 // patients that would be diverted to a new hospital at distance 0 with the
 // same bed capacity.
 const BASE_DIVERSION_RATE = 0.30;
 
-// Distance-decay function (logarithmic)
+// Distance-decay function (inverse-square-like)
 // Returns a value in [0, 1] representing how strongly the proposed hospital
 // affects an existing hospital at `distKm` kilometres away.
+// Falls off sharply — most effect within ~5km, negligible beyond 15km.
 function distanceDecay(distKm: number): number {
   if (distKm >= MAX_EFFECT_RADIUS_KM) return 0;
-  return Math.max(0, 1 - Math.log(1 + distKm) / Math.log(1 + MAX_EFFECT_RADIUS_KM));
+  const normalized = distKm / MAX_EFFECT_RADIUS_KM;
+  return (1 - normalized) ** 2;
 }
 
 interface SimHospital {

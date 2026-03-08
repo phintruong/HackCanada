@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import mapboxgl from 'mapbox-gl';
+import type { SimulateResult } from '@/lib/clearpath/types';
 
 export interface HospitalStatsPanelData {
   id: string;
@@ -18,9 +19,10 @@ interface CongestionLayerProps {
   hospitals: any[];
   congestion: any[];
   onHospitalSelect?: (hospital: HospitalStatsPanelData | null) => void;
+  simulationResult?: SimulateResult | null;
 }
 
-export default function CongestionLayer({ map, hospitals, congestion, onHospitalSelect }: CongestionLayerProps) {
+export default function CongestionLayer({ map, hospitals, congestion, onHospitalSelect, simulationResult }: CongestionLayerProps) {
 
   useEffect(() => {
     if (!map || hospitals.length === 0) return;
@@ -31,7 +33,11 @@ export default function CongestionLayer({ map, hospitals, congestion, onHospital
     }
 
     const features = hospitals.map((h: any) => {
-      const pct = loadMap[h._id ?? h.id] ?? 70;
+      const hId = String(h._id ?? h.id);
+      // Use simulation "after" occupancy if available, otherwise congestion data
+      const pct = simulationResult?.after?.[hId] !== undefined
+        ? simulationResult.after[hId]
+        : (loadMap[hId] ?? 70);
       return {
         type: 'Feature' as const,
         geometry: {
@@ -160,7 +166,7 @@ export default function CongestionLayer({ map, hospitals, congestion, onHospital
         // map already removed/destroyed — nothing to clean up
       }
     };
-  }, [map, hospitals, congestion, onHospitalSelect]);
+  }, [map, hospitals, congestion, onHospitalSelect, simulationResult]);
 
   return null;
 }

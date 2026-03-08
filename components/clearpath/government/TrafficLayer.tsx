@@ -102,7 +102,7 @@ export default function TrafficLayer({ map }: TrafficLayerProps) {
       try {
         if (map.getLayer(FLOW_LAYER_ID)) map.removeLayer(FLOW_LAYER_ID);
         if (map.getLayer(CASING_LAYER_ID)) map.removeLayer(CASING_LAYER_ID);
-        if (map.getSource(SOURCE_ID)) map.removeSource(SOURCE_ID);
+        // Don't remove the source — other base-style layers may depend on it
       } catch {
         // Map may already be destroyed
       }

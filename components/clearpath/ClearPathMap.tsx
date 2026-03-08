@@ -12,6 +12,7 @@ import TrafficLayer from './government/TrafficLayer';
 import GLBModelLayer from './government/GLBModelLayer';
 import SuitableParcelsLayer from './government/SuitableParcelsLayer';
 import CoverageHeatmapLayer from './government/CoverageHeatmapLayer';
+import HospitalTrafficHeatLayer from './government/HospitalTrafficHeatLayer';
 import type { HospitalStatsPanelData } from './CongestionLayer';
 import type { CityConfig } from '@/lib/map-3d/types';
 import type { TimelinePrediction } from '@/lib/clearpath/trafficPrediction';
@@ -122,6 +123,7 @@ export default function ClearPathMap({
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [styleEpoch, setStyleEpoch] = useState(0);
   const [selectedHospital, setSelectedHospital] = useState<HospitalStatsPanelData | null>(null);
+  const [loadingPhase, setLoadingPhase] = useState<'loading' | 'loaded' | 'hidden'>('loading');
   const [hospitals, setHospitals] = useState<Array<{ _id?: { toString: () => string }; id?: string; name?: string; latitude?: number; longitude?: number; erBeds?: number }>>([]);
   const [congestion, setCongestion] = useState<Array<{ hospitalId: string; occupancyPct: number; waitMinutes: number }>>([]);
   const proposedMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -163,6 +165,8 @@ export default function ClearPathMap({
       });
       setMapInstance(map);
       setMapReady(true);
+      setLoadingPhase('loaded');
+      setTimeout(() => setLoadingPhase('hidden'), 2000);
     });
 
     map.on('click', (e) => {
@@ -568,14 +572,40 @@ export default function ClearPathMap({
   return (
     <div className="absolute inset-0">
       <div ref={mapContainer} className="w-full h-full" />
+      {loadingPhase !== 'hidden' && (
+        <div
+          className={`absolute inset-0 z-50 flex items-center justify-center pointer-events-none transition-opacity duration-700 ${
+            loadingPhase === 'loaded' ? 'opacity-0' : 'opacity-100'
+          }`}
+        >
+          <div className="rounded-2xl border border-white/10 bg-slate-900/80 px-6 py-4 shadow-2xl backdrop-blur-md flex items-center gap-3">
+            {loadingPhase === 'loading' ? (
+              <>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-sky-400 border-t-transparent" />
+                <span className="text-sm font-medium text-white">Loading models…</span>
+              </>
+            ) : (
+              <>
+                <svg className="h-5 w-5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-sm font-medium text-white">Models loaded</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       {mapReady && (
         <React.Fragment key={styleEpoch}>
           <HospitalFootprintsLayer map={mapInstance} />
           <LandmarksLayer map={mapInstance} />
-          <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} onHospitalSelect={setSelectedHospital} />
+          <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} onHospitalSelect={setSelectedHospital} simulationResult={simulationResult} />
           {mode === 'government' && (
             <>
               <TrafficLayer map={mapInstance} />
+              {!selectedBlueprint && (
+                <HospitalTrafficHeatLayer map={mapInstance} hospitals={hospitals} congestion={congestion} simulationResult={simulationResult} proposedLocations={proposedLocations.map((b) => ({ lat: b.lat, lng: b.lng, erBeds: b.blueprint.metadata?.erBeds }))} />
+              )}
               <CoverageHeatmapLayer map={mapInstance} hospitals={hospitals} congestion={congestion} />
               {selectedBlueprint && (
                 <SuitableParcelsLayer
