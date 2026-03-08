@@ -1,6 +1,6 @@
-# ClearPath
+# ERoute
 
-A smart healthcare emergency routing platform for Ontario. ClearPath helps both **government planners** optimize ER placement and **patients** find the best hospital based on their medical condition, live traffic, and real-time ER congestion.
+A smart healthcare emergency routing platform for Ontario. ERoute helps both **government planners** optimize ER placement and **patients** find the best hospital based on their medical condition, live traffic, and real-time ER congestion.
 
 ## Features
 

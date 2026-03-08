@@ -75,7 +75,7 @@ export default function Landing() {
           <img src="/thumb.jpg" alt="" className="lp-hero-img" draggable={false} />
           <div className="lp-hero-vignette" />
 
-          <h1 className="lp-hero-title">ClearPath.</h1>
+          <h1 className="lp-hero-title">ERoute.</h1>
 
           <Link href="/map" className="lp-hero-cta">
             See the Map&ensp;&rarr;
@@ -141,7 +141,7 @@ export default function Landing() {
         {/* ───── YOUR JOURNEY ───── */}
         <section className="bg-sky-50" style={{ width: '100vw', marginLeft: 'calc(-50vw + 50%)', marginRight: 'calc(-50vw + 50%)' }}>
           <FeatureSteps
-            title="How ClearPath Works"
+            title="How ERoute Works"
             subtitle="Reducing ER congestion with data, simulation, and smart routing."
             features={[
               {

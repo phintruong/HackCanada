@@ -277,7 +277,7 @@ export default function CivilianPanel({ onRecommendation, currentRecommendation 
     <div className="h-full bg-white/95 backdrop-blur-xl shadow-xl border border-sky-100 rounded-3xl p-5 overflow-y-auto">
       <div className="mb-6">
         <h2 className="text-lg font-black text-sky-700 uppercase tracking-tight">
-          ClearPath
+          ERoute
         </h2>
         <p className="text-xs text-slate-500 mt-1">
           Find the right ER for your situation.
