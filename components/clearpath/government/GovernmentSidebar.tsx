@@ -1,21 +1,25 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import CapacitySlider from './CapacitySlider';
-import ProposedHospitalPin from './ProposedHospitalPin';
 import SimulationResultPanel from './SimulationResultPanel';
 import BlueprintPicker from './BlueprintPicker';
-import type { Blueprint } from '@/lib/clearpath/blueprints';
+import type { Blueprint, ProposedBuilding } from '@/lib/clearpath/blueprints';
 
 interface GovernmentSidebarProps {
   cityId: string;
+  proposedLocations: ProposedBuilding[];
+  onProposedLocationsChange: (locations: ProposedBuilding[]) => void;
   onSimulationResult: (result: any) => void;
   onBlueprintChange?: (blueprint: Blueprint | null) => void;
 }
 
-export default function GovernmentSidebar({ cityId, onSimulationResult, onBlueprintChange }: GovernmentSidebarProps) {
-  const [proposedLocation, setProposedLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [capacity, setCapacity] = useState(100);
+export default function GovernmentSidebar({
+  cityId,
+  proposedLocations,
+  onProposedLocationsChange,
+  onSimulationResult,
+  onBlueprintChange,
+}: GovernmentSidebarProps) {
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
   const [simResult, setSimResult] = useState<any>(null);
   const [hospitals, setHospitals] = useState<any[]>([]);
@@ -29,8 +33,7 @@ export default function GovernmentSidebar({ cityId, onSimulationResult, onBluepr
   }, [cityId]);
 
   useEffect(() => {
-    function handleMapClick(e: CustomEvent) {
-      setProposedLocation({ lat: e.detail.lat, lng: e.detail.lng });
+    function handleMapClick() {
       setSimResult(null);
     }
     window.addEventListener('clearpath:mapclick' as any, handleMapClick);
@@ -38,7 +41,7 @@ export default function GovernmentSidebar({ cityId, onSimulationResult, onBluepr
   }, []);
 
   const runSimulation = useCallback(async () => {
-    if (!proposedLocation) return;
+    if (proposedLocations.length === 0) return;
     setLoading(true);
     try {
       const res = await fetch('/api/clearpath/simulate', {
@@ -46,9 +49,11 @@ export default function GovernmentSidebar({ cityId, onSimulationResult, onBluepr
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           city: cityId,
-          proposedLat: proposedLocation.lat,
-          proposedLng: proposedLocation.lng,
-          proposedCapacity: capacity,
+          proposals: proposedLocations.map((b) => ({
+            lat: b.lat,
+            lng: b.lng,
+            capacity: b.blueprint.beds,
+          })),
         }),
       });
       const result = await res.json();
@@ -59,12 +64,24 @@ export default function GovernmentSidebar({ cityId, onSimulationResult, onBluepr
     } finally {
       setLoading(false);
     }
-  }, [proposedLocation, capacity, cityId, onSimulationResult]);
+  }, [proposedLocations, cityId, onSimulationResult]);
+
+  const removeBuilding = useCallback(
+    (id: string) => {
+      onProposedLocationsChange(proposedLocations.filter((b) => b.id !== id));
+      setSimResult(null);
+    },
+    [proposedLocations, onProposedLocationsChange]
+  );
+
+  const clearAll = useCallback(() => {
+    onProposedLocationsChange([]);
+    setSimResult(null);
+  }, [onProposedLocationsChange]);
 
   const handleBlueprintSelect = useCallback((bp: Blueprint) => {
     const next = selectedBlueprint?.id === bp.id ? null : bp;
     setSelectedBlueprint(next);
-    if (next) setCapacity(next.beds);
     onBlueprintChange?.(next);
   }, [selectedBlueprint, onBlueprintChange]);
 
@@ -94,48 +111,73 @@ export default function GovernmentSidebar({ cityId, onSimulationResult, onBluepr
         <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl space-y-3">
           <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">2</span>
-            {selectedBlueprint ? 'Place Building on Map' : 'Place Proposed ER'}
+            {selectedBlueprint ? 'Place Buildings on Map' : 'Select a blueprint first'}
           </h3>
           <p className="text-[11px] text-slate-400">
-            Click anywhere on the map to drop {selectedBlueprint ? 'the building' : 'a proposed ER location'}.
+            {selectedBlueprint
+              ? 'Click highlighted zones to add buildings. You can place multiple.'
+              : 'Choose a blueprint above, then click on highlighted parcels.'}
           </p>
-          {proposedLocation && (
-            <ProposedHospitalPin lat={proposedLocation.lat} lng={proposedLocation.lng} />
+          {proposedLocations.length > 0 && (
+            <div className="space-y-1.5">
+              {proposedLocations.map((b) => (
+                <div
+                  key={b.id}
+                  className="flex items-center justify-between gap-2 py-1.5 px-2 rounded-lg bg-white/80 border border-sky-100"
+                >
+                  <span className="text-[11px] font-medium text-slate-700 truncate">
+                    {b.blueprint.name} ({b.blueprint.beds} beds)
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => removeBuilding(b.id)}
+                    className="text-[10px] font-bold text-red-600 hover:text-red-700 px-2 py-0.5 rounded hover:bg-red-50"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={clearAll}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 w-full py-1"
+              >
+                Clear all
+              </button>
+            </div>
           )}
         </div>
 
         <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl">
           <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider mb-3 flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">3</span>
-            Set Capacity
-          </h3>
-          <CapacitySlider value={capacity} onChange={setCapacity} />
-        </div>
-
-        <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl">
-          <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">4</span>
             Run Simulation
           </h3>
           <button
             onClick={runSimulation}
-            disabled={!proposedLocation || loading}
-            className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${proposedLocation && !loading
+            disabled={proposedLocations.length === 0 || loading}
+            className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${proposedLocations.length > 0 && !loading
                 ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-md'
                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
           >
             {loading ? 'Running Simulation...' : 'Run Voronoi Simulation'}
           </button>
-          {!proposedLocation && (
+          {proposedLocations.length === 0 && (
             <p className="text-[10px] text-slate-400 text-center mt-2">
-              Place a pin on the map first
+              Place at least one building on the map first
             </p>
           )}
         </div>
 
         {simResult && (
-          <SimulationResultPanel result={simResult} hospitals={hospitals} />
+          <SimulationResultPanel
+            result={simResult}
+            hospitals={hospitals}
+            proposedLabels={Object.fromEntries(
+              proposedLocations.map((b, i) => [`proposed-${i}`, `${b.blueprint.name} (new)`])
+            )}
+          />
         )}
       </div>
     </div>

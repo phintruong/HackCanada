@@ -33,23 +33,42 @@ interface SimHospital {
   occupancyPct: number;
 }
 
-interface Diversion {
+interface Proposal {
+  lat: number;
+  lng: number;
+  capacity: number;
   id: string;
-  currentPatients: number;
-  diverted: number;
 }
 
 // Deterministic Patient Diversion Model
-// When a new hospital is placed, some fraction of patients from each
-// existing hospital within range will choose the new hospital instead.
+// When new hospitals are placed, patients divert from existing hospitals.
+// With multiple proposals, diversion is split by distance and capacity.
 export function runSimulation(
   hospitals: any[],
   snapshots: any[],
-  proposed: { lat: number; lng: number; capacity: number }
+  proposals: { lat: number; lng: number; capacity: number }[]
 ): SimulateResult {
-  // 1. Build hospital list with current occupancy
-  const simHospitals: SimHospital[] = [];
+  if (proposals.length === 0) {
+    const before: Record<string, number> = {};
+    const after: Record<string, number> = {};
+    const delta: Record<string, number> = {};
+    for (const h of hospitals) {
+      const id = h._id.toString();
+      const snap = snapshots.find((s: any) => s.hospitalId === id);
+      const occ = snap?.occupancyPct ?? 70;
+      before[id] = occ;
+      after[id] = occ;
+      delta[id] = 0;
+    }
+    return { before, after, delta };
+  }
 
+  const props: Proposal[] = proposals.map((p, i) => ({
+    ...p,
+    id: `proposed-${i}`,
+  }));
+
+  const simHospitals: SimHospital[] = [];
   for (const h of hospitals) {
     const id = h._id.toString();
     const snap = snapshots.find((s: any) => s.hospitalId === id);
@@ -63,55 +82,79 @@ export function runSimulation(
     });
   }
 
-  const proposedBeds = proposed.capacity;
-  const proposedTotalBeds = proposedBeds * 2;
-
-  // 2. Calculate diversion per hospital
-  const diversions: Diversion[] = [];
-
+  // rawDiversion[H][P] = patients diverted from H to proposal P
+  const rawDiversion: Record<string, Record<string, number>> = {};
   for (const h of simHospitals) {
-    const dist = haversine(h.lat, h.lng, proposed.lat, proposed.lng);
-    const decay = distanceDecay(dist);
+    rawDiversion[h.id] = {};
     const totalBeds = h.erBeds * 2;
     const currentPatients = (h.occupancyPct / 100) * totalBeds;
 
-    if (decay === 0) {
-      diversions.push({ id: h.id, currentPatients, diverted: 0 });
-      continue;
+    for (const p of props) {
+      const dist = haversine(h.lat, h.lng, p.lat, p.lng);
+      const decay = distanceDecay(dist);
+      if (decay === 0) {
+        rawDiversion[h.id][p.id] = 0;
+        continue;
+      }
+      const capFactor = p.capacity / (p.capacity + h.erBeds);
+      const rate = BASE_DIVERSION_RATE * decay * capFactor;
+      rawDiversion[h.id][p.id] = rate * currentPatients;
     }
-
-    const capFactor = proposedBeds / (proposedBeds + h.erBeds);
-    const diversionRate = BASE_DIVERSION_RATE * decay * capFactor;
-    const diverted = diversionRate * currentPatients;
-
-    diversions.push({ id: h.id, currentPatients, diverted });
   }
 
-  // 3. Cap total diverted at proposed capacity
-  const totalDiverted = diversions.reduce((sum, d) => sum + d.diverted, 0);
-  let scaleFactor = 1;
-  if (totalDiverted > proposedTotalBeds) {
-    scaleFactor = proposedTotalBeds / totalDiverted;
+  // Scale per hospital: total diverted from H <= currentPatients(H)
+  const div1: Record<string, Record<string, number>> = {};
+  for (const h of simHospitals) {
+    div1[h.id] = {};
+    const totalBeds = h.erBeds * 2;
+    const currentPatients = (h.occupancyPct / 100) * totalBeds;
+    const totalRaw = props.reduce((s, p) => s + (rawDiversion[h.id][p.id] ?? 0), 0);
+    const scale = totalRaw > 0 && totalRaw > currentPatients ? currentPatients / totalRaw : 1;
+    for (const p of props) {
+      div1[h.id][p.id] = (rawDiversion[h.id][p.id] ?? 0) * scale;
+    }
   }
 
-  // 4. Compute before / after / delta
+  // Scale per proposal: total received by P <= cap(P)
+  const actualDiversion: Record<string, Record<string, number>> = {};
+  for (const h of simHospitals) {
+    actualDiversion[h.id] = {};
+    for (const p of props) {
+      actualDiversion[h.id][p.id] = div1[h.id][p.id];
+    }
+  }
+  for (const p of props) {
+    const received = simHospitals.reduce((s, h) => s + div1[h.id][p.id], 0);
+    const cap = p.capacity * 2;
+    if (received > cap && received > 0) {
+      const scale = cap / received;
+      for (const h of simHospitals) {
+        actualDiversion[h.id][p.id] *= scale;
+      }
+    }
+  }
+
   const before: Record<string, number> = {};
   const after: Record<string, number> = {};
   const delta: Record<string, number> = {};
+  const proposedAfter: Record<string, number> = {};
 
   for (const h of simHospitals) {
-    const d = diversions.find(x => x.id === h.id)!;
     const totalBeds = h.erBeds * 2;
-    const actualDiverted = d.diverted * scaleFactor;
-    const newPatients = d.currentPatients - actualDiverted;
+    const currentPatients = (h.occupancyPct / 100) * totalBeds;
+    const totalDiverted = props.reduce((s, p) => s + (actualDiversion[h.id][p.id] ?? 0), 0);
+    const newPatients = Math.max(0, currentPatients - totalDiverted);
 
     before[h.id] = h.occupancyPct;
     after[h.id] = Math.max(0, Math.min(100, Math.round((newPatients / totalBeds) * 100)));
     delta[h.id] = after[h.id] - before[h.id];
   }
 
-  const actualTotal = totalDiverted * scaleFactor;
-  after['proposed'] = Math.min(100, Math.round((actualTotal / proposedTotalBeds) * 100));
+  for (const p of props) {
+    const received = simHospitals.reduce((s, h) => s + (actualDiversion[h.id][p.id] ?? 0), 0);
+    const cap = p.capacity * 2;
+    proposedAfter[p.id] = Math.min(100, Math.round((received / cap) * 100));
+  }
 
-  return { before, after, delta };
+  return { before, after, delta, proposedAfter };
 }

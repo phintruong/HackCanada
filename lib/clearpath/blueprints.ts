@@ -1,3 +1,10 @@
+export interface ProposedBuilding {
+  id: string;
+  lat: number;
+  lng: number;
+  blueprint: Blueprint;
+}
+
 export interface Blueprint {
   id: string;
   name: string;

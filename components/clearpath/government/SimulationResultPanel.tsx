@@ -5,11 +5,13 @@ interface SimulationResultPanelProps {
     before: Record<string, number>;
     after: Record<string, number>;
     delta: Record<string, number>;
+    proposedAfter?: Record<string, number>;
   };
   hospitals: any[];
+  proposedLabels?: Record<string, string>;
 }
 
-export default function SimulationResultPanel({ result, hospitals }: SimulationResultPanelProps) {
+export default function SimulationResultPanel({ result, hospitals, proposedLabels = {} }: SimulationResultPanelProps) {
   const hospitalMap: Record<string, string> = {};
   for (const h of hospitals) {
     hospitalMap[(h._id ?? h.id)?.toString()] = h.name;
@@ -53,16 +55,19 @@ export default function SimulationResultPanel({ result, hospitals }: SimulationR
                 </td>
               </tr>
             ))}
-            {result.after['proposed'] !== undefined && (
-              <tr className="bg-blue-50/70 border-t border-blue-200">
-                <td className="px-3 py-2 font-bold text-blue-800">Proposed ER</td>
-                <td className="text-right px-2 py-2 text-slate-400">—</td>
-                <td className="text-right px-2 py-2 font-bold text-blue-700 font-mono">{result.after['proposed']}%</td>
-                <td className="text-right px-3 py-2">
-                  <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold uppercase tracking-wide">New</span>
-                </td>
-              </tr>
-            )}
+            {(() => {
+              const proposed = result.proposedAfter ?? (result.after?.['proposed'] !== undefined ? { proposed: result.after['proposed'] } : {});
+              return Object.entries(proposed).map(([key, occ]) => (
+                <tr key={key} className="bg-blue-50/70 border-t border-blue-200">
+                  <td className="px-3 py-2 font-bold text-blue-800">{proposedLabels[key] ?? `Proposed ${key.replace('proposed-', '#')}`}</td>
+                  <td className="text-right px-2 py-2 text-slate-400">—</td>
+                  <td className="text-right px-2 py-2 font-bold text-blue-700 font-mono">{occ}%</td>
+                  <td className="text-right px-3 py-2">
+                    <span className="text-[9px] px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded font-bold uppercase tracking-wide">New</span>
+                  </td>
+                </tr>
+              ));
+            })()}
           </tbody>
         </table>
       </div>

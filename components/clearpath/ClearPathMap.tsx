@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { createMapboxMap } from '@/lib/mapbox/createMap';
@@ -13,18 +13,28 @@ import GLBModelLayer from './government/GLBModelLayer';
 import SuitableParcelsLayer from './government/SuitableParcelsLayer';
 import type { CityConfig } from '@/lib/map-3d/types';
 import type { TimelinePrediction } from '@/lib/clearpath/trafficPrediction';
-import type { Blueprint } from '@/lib/clearpath/blueprints';
+import type { Blueprint, ProposedBuilding } from '@/lib/clearpath/blueprints';
+import type { SimulateResult } from '@/lib/clearpath/types';
+import type { ScoredHospital } from '@/lib/clearpath/types';
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
+
+interface RouteRecommendation {
+  recommended: ScoredHospital;
+  alternatives: ScoredHospital[];
+  userLocation: { lat: number; lng: number };
+  activeRoute?: ScoredHospital;
+}
 
 interface ClearPathMapProps {
   mode: 'government' | 'civilian';
   cityId: string;
   cityConfig: CityConfig;
-  simulationResult: any;
-  recommendedHospital: any;
-  onMapClick?: (lngLat: { lng: number; lat: number }) => void;
-  proposedLocation?: { lat: number; lng: number } | null;
+  simulationResult: SimulateResult | null;
+  recommendedHospital: RouteRecommendation | null;
+  onMapClick?: (lngLat: { lng: number; lat: number }, blueprint: Blueprint | null) => void;
+  onProposedLocationUpdate?: (id: string, lngLat: { lng: number; lat: number }) => void;
+  proposedLocations?: ProposedBuilding[];
   trafficPrediction?: TimelinePrediction | null;
   trafficDragging?: boolean;
   selectedBlueprint?: Blueprint | null;
@@ -82,7 +92,8 @@ export default function ClearPathMap({
   simulationResult,
   recommendedHospital,
   onMapClick,
-  proposedLocation,
+  onProposedLocationUpdate,
+  proposedLocations = [],
   trafficPrediction,
   trafficDragging,
   selectedBlueprint,
@@ -90,15 +101,20 @@ export default function ClearPathMap({
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const [mapReady, setMapReady] = useState(false);
-  const [hospitals, setHospitals] = useState<any[]>([]);
-  const [congestion, setCongestion] = useState<any[]>([]);
-  const proposedMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  const [hospitals, setHospitals] = useState<Array<{ _id?: { toString: () => string }; id?: string; name?: string; latitude?: number; longitude?: number; erBeds?: number }>>([]);
+  const [congestion, setCongestion] = useState<Array<{ hospitalId: string; occupancyPct: number; waitMinutes: number }>>([]);
+  const proposedMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const recommendedMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const userMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const prevCityIdRef = useRef(cityId);
   const trafficAnimRef = useRef<number>(0);
   const onMapClickRef = useRef(onMapClick);
-  onMapClickRef.current = onMapClick;
+  const selectedBlueprintRef = useRef(selectedBlueprint);
+  useEffect(() => {
+    onMapClickRef.current = onMapClick;
+    selectedBlueprintRef.current = selectedBlueprint;
+  }, [onMapClick, selectedBlueprint]);
 
   useEffect(() => {
     if (!mapContainer.current || mapRef.current) return;
@@ -120,11 +136,17 @@ export default function ClearPathMap({
         bearing: -20,
         duration: 2000,
       });
+      setMapInstance(map);
       setMapReady(true);
     });
 
     map.on('click', (e) => {
-      onMapClickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat });
+      const bp = selectedBlueprintRef.current;
+      if (bp) {
+        const hits = map.queryRenderedFeatures(e.point, { layers: ['suitable-parcels-fill'] });
+        if (!hits.length) return;
+      }
+      onMapClickRef.current?.({ lng: e.lngLat.lng, lat: e.lngLat.lat }, bp ?? null);
     });
 
     mapRef.current = map;
@@ -132,6 +154,7 @@ export default function ClearPathMap({
     return () => {
       map.remove();
       mapRef.current = null;
+      setMapInstance(null);
       setMapReady(false);
     };
   }, []);
@@ -168,16 +191,36 @@ export default function ClearPathMap({
     });
   }, [cityId, cityConfig, mapReady]);
 
+  const onProposedLocationUpdateRef = useRef(onProposedLocationUpdate);
   useEffect(() => {
-    if (!mapRef.current || mode !== 'government' || !proposedLocation) {
-      proposedMarkerRef.current?.remove();
-      proposedMarkerRef.current = null;
+    onProposedLocationUpdateRef.current = onProposedLocationUpdate;
+  }, [onProposedLocationUpdate]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || mode !== 'government') {
+      proposedMarkersRef.current.forEach((m) => m.remove());
+      proposedMarkersRef.current.clear();
       return;
     }
 
-    if (proposedMarkerRef.current) {
-      proposedMarkerRef.current.setLngLat([proposedLocation.lng, proposedLocation.lat]);
-    } else {
+    const currentIds = new Set(proposedLocations.map((b) => b.id));
+    const markers = proposedMarkersRef.current;
+
+    for (const [id, marker] of markers) {
+      if (!currentIds.has(id)) {
+        marker.remove();
+        markers.delete(id);
+      }
+    }
+
+    for (const b of proposedLocations) {
+      const existing = markers.get(b.id);
+      if (existing) {
+        existing.setLngLat([b.lng, b.lat]);
+        continue;
+      }
+
       const el = document.createElement('div');
       el.className = 'proposed-hospital-pin';
       el.style.cssText = `
@@ -186,16 +229,28 @@ export default function ClearPathMap({
         box-shadow: 0 0 12px rgba(59,130,246,0.6);
         cursor: grab;
       `;
-      proposedMarkerRef.current = new mapboxgl.Marker({ element: el, draggable: true })
-        .setLngLat([proposedLocation.lng, proposedLocation.lat])
-        .addTo(mapRef.current);
+      const marker = new mapboxgl.Marker({ element: el, draggable: true })
+        .setLngLat([b.lng, b.lat])
+        .addTo(map);
 
-      proposedMarkerRef.current.on('dragend', () => {
-        const lngLat = proposedMarkerRef.current!.getLngLat();
-        onMapClickRef.current?.({ lng: lngLat.lng, lat: lngLat.lat });
+      const buildingId = b.id;
+      marker.on('dragend', () => {
+        const lngLat = marker.getLngLat();
+        if (selectedBlueprintRef.current && mapRef.current) {
+          const pt = mapRef.current.project(lngLat);
+          const hits = mapRef.current.queryRenderedFeatures(pt, { layers: ['suitable-parcels-fill'] });
+          if (!hits.length) {
+            const prev = proposedLocations.find((x) => x.id === buildingId);
+            if (prev) marker.setLngLat([prev.lng, prev.lat]);
+            return;
+          }
+        }
+        onProposedLocationUpdateRef.current?.(buildingId, { lng: lngLat.lng, lat: lngLat.lat });
       });
+
+      markers.set(b.id, marker);
     }
-  }, [mode, proposedLocation]);
+  }, [mode, proposedLocations]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -232,8 +287,9 @@ export default function ClearPathMap({
     }
 
     if (!recommendedHospital) return;
+    const recHosp = recommendedHospital;
 
-    const rec = recommendedHospital.recommended ?? recommendedHospital;
+    const rec = recHosp.recommended ?? recHosp;
     const h = rec.hospital ?? rec;
     if (!h?.latitude || !h?.longitude) return;
 
@@ -253,7 +309,7 @@ export default function ClearPathMap({
     }
 
     // Use activeRoute if set (from "Show Route" on an alternative), otherwise use recommended
-    const activeRoute = recommendedHospital.activeRoute;
+    const activeRoute = recHosp.activeRoute;
     const routeSource = activeRoute ?? rec;
     const routeGeometry = routeSource.routeGeometry;
     const congestionSegs = routeSource.congestionSegments as string[] | undefined;
@@ -342,8 +398,8 @@ export default function ClearPathMap({
       }
 
       // Draw alternative routes as dashed lines (civilian only)
-      const alts = mode === 'government' ? [] : (recommendedHospital.alternatives ?? []);
-      alts.forEach((alt: any, i: number) => {
+      const alts = mode === 'government' ? [] : (recHosp.alternatives ?? []);
+      alts.forEach((alt: ScoredHospital, i: number) => {
         if (alt.routeGeometry) {
           map.addSource(`alt-route-${i}`, {
             type: 'geojson',
@@ -391,14 +447,13 @@ export default function ClearPathMap({
   // Update route progress + traffic colors when the timeline slider moves
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !trafficPrediction) return;
+    if (!map || !trafficPrediction || !recommendedHospital) return;
 
     const predSegs = trafficPrediction.segments;
-    const rec = recommendedHospital?.recommended ?? recommendedHospital;
-    const activeRoute = recommendedHospital?.activeRoute;
-    const routeSource = activeRoute ?? rec;
-    const routeGeometry = routeSource?.routeGeometry;
-    const baseCongestion = routeSource?.congestionSegments as string[] | undefined;
+    const rec = recommendedHospital.recommended;
+    const activeRoute = recommendedHospital.activeRoute;
+    const routeSource: ScoredHospital = activeRoute ?? rec;
+    const routeGeometry = routeSource.routeGeometry;
 
     if (!routeGeometry?.coordinates) return;
 
@@ -464,32 +519,33 @@ export default function ClearPathMap({
       <div ref={mapContainer} className="w-full h-full" />
       {mapReady && (
         <>
-          <HospitalFootprintsLayer map={mapRef.current} />
-          <LandmarksLayer map={mapRef.current} />
-          <CongestionLayer map={mapRef.current} hospitals={hospitals} congestion={congestion} />
+          <HospitalFootprintsLayer map={mapInstance} />
+          <LandmarksLayer map={mapInstance} />
+          <CongestionLayer map={mapInstance} hospitals={hospitals} congestion={congestion} />
           {mode === 'government' && (
             <>
-              <TrafficLayer map={mapRef.current} />
+              <TrafficLayer map={mapInstance} />
               {selectedBlueprint && (
                 <SuitableParcelsLayer
-                  map={mapRef.current}
+                  map={mapInstance}
                   cityId={cityId}
                   blueprint={selectedBlueprint}
                 />
               )}
               <FlowArcs
-                map={mapRef.current}
+                map={mapInstance}
                 hospitals={hospitals}
-                proposedLocation={proposedLocation ?? null}
+                proposedLocations={proposedLocations.map((b) => ({ lat: b.lat, lng: b.lng }))}
                 simulationResult={simulationResult}
               />
-              {selectedBlueprint && proposedLocation && (
+              {proposedLocations.map((b) => (
                 <GLBModelLayer
-                  map={mapRef.current}
-                  glbPath={selectedBlueprint.glbPath}
-                  lngLat={proposedLocation}
+                  key={b.id}
+                  map={mapInstance}
+                  glbPath={b.blueprint.glbPath}
+                  lngLat={{ lat: b.lat, lng: b.lng }}
                 />
-              )}
+              ))}
             </>
           )}
         </>

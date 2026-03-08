@@ -6,36 +6,40 @@ import mapboxgl from 'mapbox-gl';
 interface FlowArcsProps {
   map: mapboxgl.Map | null;
   hospitals: any[];
-  proposedLocation: { lat: number; lng: number } | null;
+  proposedLocations: Array<{ lat: number; lng: number }>;
   simulationResult: any;
 }
 
-export default function FlowArcs({ map, hospitals, proposedLocation, simulationResult }: FlowArcsProps) {
+export default function FlowArcs({ map, hospitals, proposedLocations, simulationResult }: FlowArcsProps) {
   useEffect(() => {
-    if (!map || !proposedLocation || !simulationResult || hospitals.length === 0) return;
+    if (!map || !simulationResult || hospitals.length === 0 || proposedLocations.length === 0) return;
 
     const sourceId = 'flow-arcs';
     const layerId = 'flow-arc-lines';
 
-    const features = hospitals
-      .filter((h: any) => {
-        const id = (h._id ?? h.id)?.toString();
-        return simulationResult.delta && simulationResult.delta[id] < 0;
-      })
-      .map((h: any) => ({
-        type: 'Feature' as const,
-        geometry: {
-          type: 'LineString' as const,
-          coordinates: [
-            [h.longitude, h.latitude],
-            [proposedLocation.lng, proposedLocation.lat]
-          ]
-        },
-        properties: {
-          delta: simulationResult.delta[(h._id ?? h.id)?.toString()] ?? 0,
-          name: h.name
-        }
-      }));
+    const features: GeoJSON.Feature<GeoJSON.LineString>[] = [];
+    const hospitalsWithNegativeDelta = hospitals.filter((h: any) => {
+      const id = (h._id ?? h.id)?.toString();
+      return simulationResult.delta && simulationResult.delta[id] < 0;
+    });
+
+    for (const h of hospitalsWithNegativeDelta) {
+      const hId = (h._id ?? h.id)?.toString();
+      const delta = simulationResult.delta?.[hId] ?? 0;
+      for (const p of proposedLocations) {
+        features.push({
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: [
+              [h.longitude, h.latitude],
+              [p.lng, p.lat],
+            ],
+          },
+          properties: { delta, name: h.name },
+        });
+      }
+    }
 
     if (map.getSource(sourceId)) {
       (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData({
@@ -72,7 +76,7 @@ export default function FlowArcs({ map, hospitals, proposedLocation, simulationR
         // Map already destroyed during navigation — nothing to clean up
       }
     };
-  }, [map, hospitals, proposedLocation, simulationResult]);
+  }, [map, hospitals, proposedLocations, simulationResult]);
 
   return null;
 }

@@ -9,14 +9,14 @@ import CivilianPanel from '@/components/clearpath/civilian/CivilianPanel';
 import TrafficTimeline from '@/components/clearpath/TrafficTimeline';
 import { CITIES } from '@/lib/map-3d/cities';
 import type { TimelinePrediction, RerouteAlert } from '@/lib/clearpath/trafficPrediction';
-import type { Blueprint } from '@/lib/clearpath/blueprints';
+import type { Blueprint, ProposedBuilding } from '@/lib/clearpath/blueprints';
 
 export default function MapPage() {
   const [mode, setMode] = useState<'government' | 'civilian'>('civilian');
   const [selectedCity, setSelectedCity] = useState(() => CITIES[0]);
   const [simulationResult, setSimulationResult] = useState(null);
   const [recommendedHospital, setRecommendedHospital] = useState<any>(null);
-  const [proposedLocation, setProposedLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [proposedLocations, setProposedLocations] = useState<ProposedBuilding[]>([]);
   const [trafficPrediction, setTrafficPrediction] = useState<TimelinePrediction | null>(null);
   const [isTimelineDragging, setIsTimelineDragging] = useState(false);
   const [selectedBlueprint, setSelectedBlueprint] = useState<Blueprint | null>(null);
@@ -25,12 +25,19 @@ export default function MapPage() {
   const lastRouteParamsRef = useRef<any>(null);
   const [isRerouting, setIsRerouting] = useState(false);
 
-  const handleMapClick = useCallback((lngLat: { lng: number; lat: number }) => {
-    if (mode === 'government') {
-      setProposedLocation({ lat: lngLat.lat, lng: lngLat.lng });
-      window.dispatchEvent(new CustomEvent('clearpath:mapclick', { detail: lngLat }));
+  const handleMapClick = useCallback((lngLat: { lng: number; lat: number }, blueprint: Blueprint | null) => {
+    if (mode === 'government' && blueprint) {
+      const id = `proposed-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      setProposedLocations((prev) => [...prev, { id, lat: lngLat.lat, lng: lngLat.lng, blueprint }]);
+      window.dispatchEvent(new CustomEvent('clearpath:mapclick', { detail: { lngLat, blueprint } }));
     }
   }, [mode]);
+
+  const handleProposedLocationUpdate = useCallback((id: string, lngLat: { lng: number; lat: number }) => {
+    setProposedLocations((prev) =>
+      prev.map((b) => (b.id === id ? { ...b, lng: lngLat.lng, lat: lngLat.lat } : b))
+    );
+  }, []);
 
   const handleCityChange = useCallback((city: (typeof CITIES)[0]) => {
     setSelectedCity(city);
@@ -42,7 +49,7 @@ export default function MapPage() {
       setRecommendedHospital(null);
       setTrafficPrediction(null);
     } else {
-      setProposedLocation(null);
+      setProposedLocations([]);
       setSimulationResult(null);
       setSelectedBlueprint(null);
     }
@@ -106,7 +113,8 @@ export default function MapPage() {
         simulationResult={simulationResult}
         recommendedHospital={recommendedHospital}
         onMapClick={handleMapClick}
-        proposedLocation={proposedLocation}
+        onProposedLocationUpdate={handleProposedLocationUpdate}
+        proposedLocations={proposedLocations}
         trafficPrediction={trafficPrediction}
         trafficDragging={isTimelineDragging}
         selectedBlueprint={selectedBlueprint}
@@ -130,6 +138,8 @@ export default function MapPage() {
           {mode === 'government' ? (
             <GovernmentSidebar
               cityId={selectedCity.id}
+              proposedLocations={proposedLocations}
+              onProposedLocationsChange={setProposedLocations}
               onSimulationResult={setSimulationResult}
               onBlueprintChange={setSelectedBlueprint}
             />
