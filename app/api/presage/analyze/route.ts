@@ -4,6 +4,7 @@ import type { PresageVitals } from '@/lib/clearpath/types';
 const MAX_FRAMES = 40;
 const MAX_PAYLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 const PRESAGE_TIMEOUT_MS = 20_000;
+const DEBUG_RESPONSE_SLICE = 300;
 
 function isStringArray(arr: unknown): arr is string[] {
   return Array.isArray(arr) && arr.every((x) => typeof x === 'string');
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
 
   const presageKey = process.env.presage_key;
   const presageUrl = process.env.PRESAGE_API_URL;
+  const useXApiKey = process.env.PRESAGE_AUTH_HEADER === 'x-api-key';
 
   if (!presageKey || !presageUrl) {
     return NextResponse.json(
@@ -83,31 +85,51 @@ export async function POST(req: NextRequest) {
   const timeoutId = setTimeout(() => controller.abort(), PRESAGE_TIMEOUT_MS);
 
   try {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (useXApiKey) {
+      headers['x-api-key'] = presageKey;
+    } else {
+      headers['Authorization'] = `Bearer ${presageKey}`;
+    }
+
     const res = await fetch(presageUrl, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${presageKey}`,
-      },
+      headers,
       body: JSON.stringify({ frames }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
 
+    const text = await res.text();
+    const preview = text.slice(0, DEBUG_RESPONSE_SLICE);
+    console.error('[Presage] response status:', res.status, 'preview:', preview);
+
     if (!res.ok) {
-      const text = await res.text();
-      console.error('Presage API error:', res.status, text.slice(0, 500));
       return NextResponse.json(
         { error: 'Face analysis failed' },
         { status: 500 }
       );
     }
 
-    const text = await res.text();
-    if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
-      console.error('Presage API returned non-JSON (likely HTML):', res.status, text.slice(0, 300));
+    if (text.trimStart().startsWith('<')) {
       return NextResponse.json(
-        { error: 'Presage endpoint returned an invalid response. Check PRESAGE_API_URL and API docs.' },
+        {
+          error:
+            'Presage endpoint returned HTML. Check PRESAGE_API_URL and authentication.',
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!text.trim().startsWith('{') && !text.trim().startsWith('[')) {
+      console.error('[Presage] non-JSON response:', preview);
+      return NextResponse.json(
+        {
+          error:
+            'Presage endpoint returned HTML. Check PRESAGE_API_URL and authentication.',
+        },
         { status: 500 }
       );
     }
@@ -116,7 +138,7 @@ export async function POST(req: NextRequest) {
     try {
       data = JSON.parse(text) as unknown;
     } catch {
-      console.error('Presage API response was not valid JSON:', text.slice(0, 300));
+      console.error('[Presage] invalid JSON:', preview);
       return NextResponse.json(
         { error: 'Invalid Presage response' },
         { status: 500 }
@@ -163,7 +185,7 @@ export async function POST(req: NextRequest) {
           { status: 500 }
         );
       }
-      console.error('Presage request failed:', err.message);
+      console.error('[Presage] request failed:', err.message);
     }
     return NextResponse.json(
       { error: 'Face analysis failed' },

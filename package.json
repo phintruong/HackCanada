@@ -4,8 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ws": "tsx scripts/ws-server-standalone.ts",
+    "dev:all": "concurrently -n next,ws -c blue,green \"pnpm run dev\" \"pnpm run dev:ws\"",
     "build": "next build",
-    "start": "next start",
+    "start": "tsx server.ts",
     "lint": "eslint",
     "generate-sounds": "node scripts/generate-sounds.mjs"
   },
@@ -26,10 +28,12 @@
     "mongodb": "^7.1.0",
     "next": "16.1.6",
     "openai": "^6.27.0",
+    "qrcode.react": "^4.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "tailwind-merge": "^3.4.0",
     "three": "^0.182.0",
+    "ws": "^8.19.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -39,9 +43,12 @@
     "@types/react": "^19.2.13",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.160.0",
+    "@types/ws": "^8.5.13",
+    "concurrently": "^9.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
+    "tsx": "^4.19.2",
     "typescript": "^5"
   },
   "ignoreScripts": [

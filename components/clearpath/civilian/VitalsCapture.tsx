@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import { VitalsPayload } from '@/lib/clearpath/types';
 import type { PresageVitals } from '@/lib/clearpath/types';
 
@@ -11,7 +12,7 @@ const CANVAS_HEIGHT = 480;
 const MAX_FRAMES = 40;
 const PRESAGE_FETCH_TIMEOUT_MS = 20_000;
 
-type CaptureState = 'initializing' | 'capturing' | 'analyzing' | 'manualFallback' | 'complete';
+type CaptureState = 'initializing' | 'capturing' | 'analyzing' | 'manualFallback' | 'complete' | 'waitingPhoneScan';
 
 interface VitalsCaptureProps {
   onComplete: (vitals: VitalsPayload) => void;
@@ -38,9 +39,94 @@ export default function VitalsCapture({ onComplete, onSkip }: VitalsCaptureProps
   const [manualRespiratoryRate, setManualRespiratoryRate] = useState<number>(16);
   const [manualStressIndex, setManualStressIndex] = useState<number>(0.3);
   const [fallbackMessage, setFallbackMessage] = useState<string | null>(null);
+  const [phoneScanSessionId, setPhoneScanSessionId] = useState<string | null>(null);
+  const [phoneScanConnectionLost, setPhoneScanConnectionLost] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const socketRef = useRef<WebSocket | null>(null);
+  const vitalsReceivedRef = useRef(false);
+
+  const closePhoneScanSocket = useCallback(() => {
+    if (socketRef.current) {
+      try {
+        socketRef.current.close();
+      } catch {
+        /* ignore */
+      }
+      socketRef.current = null;
+    }
+  }, []);
+
+  const startPhoneScan = useCallback(async () => {
+    setPhoneScanConnectionLost(false);
+    vitalsReceivedRef.current = false;
+    closePhoneScanSocket();
+
+    try {
+      const res = await fetch('/api/scan/session');
+      if (!res.ok) throw new Error('Session failed');
+      const { sessionId } = (await res.json()) as { sessionId: string };
+      if (!sessionId) throw new Error('No session ID');
+      setPhoneScanSessionId(sessionId);
+      setCaptureState('waitingPhoneScan');
+
+      const protocol = typeof window !== 'undefined' && window.location?.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      const wsPort = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_WS_PORT ? process.env.NEXT_PUBLIC_WS_PORT : (typeof window !== 'undefined' ? window.location.port : '3000');
+      const wsUrl = `${protocol}//${host}:${wsPort}/ws`;
+      const socket = new WebSocket(wsUrl);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        socket.send(JSON.stringify({ type: 'laptop', sessionId }));
+      };
+
+      socket.onmessage = (event) => {
+        if (vitalsReceivedRef.current) return;
+        try {
+          const data = JSON.parse(event.data as string) as { type?: string; hr?: number; rr?: number; stress?: number };
+          if (data?.type !== 'vitals' || typeof data.hr !== 'number' || typeof data.rr !== 'number' || typeof data.stress !== 'number') return;
+          vitalsReceivedRef.current = true;
+          closePhoneScanSocket();
+          onComplete({
+            heartRate: clampHeartRate(data.hr),
+            respiratoryRate: clampRespiratoryRate(data.rr),
+            stressIndex: clampStressIndex(data.stress),
+          });
+          setCaptureState('complete');
+        } catch {
+          /* ignore */
+        }
+      };
+
+      socket.onclose = () => {
+        socketRef.current = null;
+        if (!vitalsReceivedRef.current) setPhoneScanConnectionLost(true);
+      };
+
+      socket.onerror = () => {
+        if (!vitalsReceivedRef.current) setPhoneScanConnectionLost(true);
+      };
+    } catch {
+      setPhoneScanConnectionLost(true);
+      setCaptureState('waitingPhoneScan');
+      setPhoneScanSessionId(null);
+    }
+  }, [onComplete, closePhoneScanSocket]);
+
+  const retryPhoneScan = useCallback(() => {
+    closePhoneScanSocket();
+    setPhoneScanConnectionLost(false);
+    startPhoneScan();
+  }, [closePhoneScanSocket, startPhoneScan]);
+
+  const exitPhoneScan = useCallback(() => {
+    closePhoneScanSocket();
+    setPhoneScanSessionId(null);
+    setPhoneScanConnectionLost(false);
+    setCaptureState('initializing');
+  }, [closePhoneScanSocket]);
 
   const switchToManualFallback = useCallback((message: string) => {
     setFallbackMessage(message);
@@ -171,8 +257,9 @@ export default function VitalsCapture({ onComplete, onSkip }: VitalsCaptureProps
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      closePhoneScanSocket();
     };
-  }, []);
+  }, [closePhoneScanSocket]);
 
   const submitManual = useCallback(() => {
     const payload: VitalsPayload = {
@@ -257,6 +344,60 @@ export default function VitalsCapture({ onComplete, onSkip }: VitalsCaptureProps
     );
   }
 
+  if (captureState === 'waitingPhoneScan') {
+    const scanUrl =
+      typeof window !== 'undefined' && phoneScanSessionId
+        ? `${window.location.origin}/scan?session=${encodeURIComponent(phoneScanSessionId)}${process.env.NEXT_PUBLIC_WS_PORT ? `&wsPort=${process.env.NEXT_PUBLIC_WS_PORT}` : ''}`
+        : '';
+    return (
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          Scan with phone
+        </h3>
+        {phoneScanConnectionLost ? (
+          <>
+            <p className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              Connection lost. Please scan again.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={retryPhoneScan}
+                className="flex-1 py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-bold uppercase"
+              >
+                Try again
+              </button>
+              <button
+                onClick={exitPhoneScan}
+                className="px-4 py-2.5 border border-slate-200 text-slate-500 rounded-lg text-sm font-medium hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-[11px] text-slate-500">
+              Scan the QR code with the ClearPath iOS app to capture vitals.
+            </p>
+            {scanUrl ? (
+              <div className="flex justify-center p-4 bg-white rounded-lg">
+                <QRCodeSVG value={scanUrl} size={256} level="M" />
+              </div>
+            ) : (
+              <p className="text-[11px] text-amber-700">Loading session…</p>
+            )}
+            <button
+              onClick={exitPhoneScan}
+              className="w-full text-[11px] text-slate-400 hover:text-slate-600 underline"
+            >
+              Cancel
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (captureState === 'capturing' || captureState === 'analyzing') {
     return (
       <div className="fixed inset-0 z-9999 bg-black/90 backdrop-blur-sm flex items-center justify-center">
@@ -321,13 +462,19 @@ export default function VitalsCapture({ onComplete, onSkip }: VitalsCaptureProps
         Vitals Capture
       </h3>
       <p className="text-[11px] text-slate-500">
-        Use your camera for a {CAPTURE_DURATION_SECONDS}-second measurement, or enter vitals manually.
+        Use your camera for a {CAPTURE_DURATION_SECONDS}-second measurement, scan with the iOS app, or enter vitals manually.
       </p>
       <button
         onClick={startCameraCapture}
         className="w-full py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-bold uppercase"
       >
         Start {CAPTURE_DURATION_SECONDS}s Capture
+      </button>
+      <button
+        onClick={startPhoneScan}
+        className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-sm font-bold uppercase"
+      >
+        Scan with phone
       </button>
       <button
         onClick={() => switchToManualFallback('Enter vitals manually.')}
