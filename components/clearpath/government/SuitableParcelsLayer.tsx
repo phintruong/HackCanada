@@ -52,32 +52,29 @@ export default function SuitableParcelsLayer({ map, cityId, blueprint }: Suitabl
 
         map.addSource(SOURCE_ID, { type: 'geojson', data: filtered });
 
-        map.addLayer(
-          {
-            id: FILL_LAYER_ID,
-            type: 'fill',
-            source: SOURCE_ID,
-            paint: {
-              'fill-color': '#22d3ee',
-              'fill-opacity': 0.25,
-            },
+        map.addLayer({
+          id: FILL_LAYER_ID,
+          type: 'fill-extrusion',
+          source: SOURCE_ID,
+          paint: {
+            'fill-extrusion-color': '#22d3ee',
+            'fill-extrusion-height': 2,
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.35,
           },
-          beforeLayerId
-        );
+        });
 
-        map.addLayer(
-          {
-            id: LINE_LAYER_ID,
-            type: 'line',
-            source: SOURCE_ID,
-            paint: {
-              'line-color': '#06b6d4',
-              'line-width': 2,
-              'line-opacity': 0.8,
-            },
+        // Add a line layer on top to give a crisp border
+        map.addLayer({
+          id: LINE_LAYER_ID,
+          type: 'line',
+          source: SOURCE_ID,
+          paint: {
+            'line-color': '#06b6d4',
+            'line-width': 3,
+            'line-opacity': 0.9,
           },
-          beforeLayerId
-        );
+        });
       } catch {
         // GeoJSON may not exist for this city
       }

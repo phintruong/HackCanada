@@ -259,10 +259,7 @@ function cleanClonedGroup(group: THREE.Group): void {
     }
 
     // Check for plane geometry specifically (any size)
-    if (child.geometry instanceof THREE.PlaneGeometry) {
-      toRemove.push(child);
-      return;
-    }
+    // Removed aggressive PlaneGeometry deletion because windows/doors might use it
 
     // Check if it's a flat plane by dimensions
     if (child.geometry) {
@@ -273,15 +270,8 @@ function cleanClonedGroup(group: THREE.Group): void {
         const sizeX = box.max.x - box.min.x;
         const sizeZ = box.max.z - box.min.z;
 
-        // If it's very flat (thin in Y) and reasonably large, it's likely a plane/ground
-        // Use more aggressive thresholds
-        if (sizeY < 0.2 && (sizeX > 20 || sizeZ > 20)) {
-          toRemove.push(child);
-          return;
-        }
-
-        // Also catch very large flat objects in any orientation
-        if (sizeX > 100 || sizeZ > 100) {
+        // If it's very flat (thin in Y) and reasonably large AND sits at y=0, it's likely a ground plane
+        if (sizeY < 0.2 && (sizeX > 20 || sizeZ > 20) && Math.abs(box.min.y) < 0.5) {
           toRemove.push(child);
           return;
         }
@@ -439,16 +429,16 @@ export async function exportToMap(
             const size = new THREE.Vector3();
             boundingBox.getSize(size);
 
-            // Skip flat planes - use stricter thresholds
+            // Skip flat ground planes
             const isFlat = size.y < 0.5;
             const isLarge = size.x > 50 || size.z > 50;
-            if (isFlat && isLarge) {
+            const isAtGround = Math.abs(boundingBox.min.y) < 0.5;
+            if (isFlat && isLarge && isAtGround) {
               return;
             }
 
-            // Only include if it's a reasonable building-sized object
-            if (size.y > 0.5 && size.x < 100 && size.z < 100) {
-              // Clone the mesh with its material
+            // Include all other valid geometry, regardless of size
+            if (size.y > 0.1) {
               const clonedMesh = object.clone();
               exportGroup.add(clonedMesh);
             }

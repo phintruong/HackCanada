@@ -182,7 +182,7 @@ export default function ClearPathMap({
       setMapInstance(null);
       setMapReady(false);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Switch styles via setStyle — bump epoch so child layers re-add
@@ -590,16 +590,23 @@ export default function ClearPathMap({
                 proposedLocations={proposedLocations.map((b) => ({ lat: b.lat, lng: b.lng }))}
                 simulationResult={simulationResult}
               />
-              {proposedLocations.map((b) => (
-                <GLBModelLayer
-                  key={b.id}
-                  id={b.id}
-                  map={mapInstance}
-                  glbPath={b.blueprint.glbPath}
-                  lngLat={{ lat: b.lat, lng: b.lng }}
-                  rotation={b.rotation}
-                />
-              ))}
+              {proposedLocations.map((b) => {
+                // Scale realistic building size based on beds:
+                // 50 beds -> ~120m, 150 beds -> ~200m, 400 beds -> ~320m
+                const targetSize = Math.max(120, Math.min(b.blueprint.beds * 0.8 + 80, 400));
+
+                return (
+                  <GLBModelLayer
+                    key={b.id}
+                    id={b.id}
+                    map={mapInstance}
+                    glbPath={b.blueprint.glbPath}
+                    lngLat={{ lat: b.lat, lng: b.lng }}
+                    rotation={b.rotation}
+                    targetSizeMeters={targetSize}
+                  />
+                );
+              })}
             </>
           )}
         </React.Fragment>
