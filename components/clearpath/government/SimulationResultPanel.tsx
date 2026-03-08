@@ -26,14 +26,14 @@ export default function SimulationResultPanel({ result, hospitals, proposedLabel
   }));
 
   return (
-    <div className="space-y-3">
+    <div className="civ-glass rounded-2xl border border-sky-100/70 p-4 space-y-3">
       <div className="flex items-center gap-2">
         <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
         <h3 className="text-[11px] font-bold text-slate-600 uppercase tracking-wider">
           Simulation Results
         </h3>
       </div>
-      <div className="rounded-lg border border-slate-200 overflow-hidden">
+      <div className="rounded-xl border border-slate-200 overflow-hidden bg-white/90">
         <table className="w-full text-[10px]">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200">

@@ -109,42 +109,54 @@ export default function GovernmentSidebar({
   }, [selectedBlueprint, onBlueprintChange]);
 
   return (
-    <div className="h-full bg-white/95 backdrop-blur-xl shadow-xl border border-sky-100 rounded-3xl p-5 overflow-y-auto">
-      <div className="mb-6">
-        <h2 className="text-lg font-black text-sky-700 uppercase tracking-tight">
-          Planning Console
-        </h2>
-        <p className="text-xs text-slate-500 mt-1">
-          Simulate new ER placement and assess impact on the regional hospital network.
-        </p>
+    <div className="civ-panel gov-panel">
+      <div className="civ-header">
+        <div className="civ-header-icon" aria-hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 20h18" />
+            <path d="M5 20V9l7-5 7 5v11" />
+            <path d="M9 12h6" />
+            <path d="M12 9v6" />
+          </svg>
+        </div>
+        <div>
+          <h2 className="civ-header-title">Planning Console</h2>
+          <p className="civ-header-sub">Simulate ER placement and assess network impact</p>
+        </div>
       </div>
 
       <div className="space-y-4">
         <Link
           href="/editor"
-          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-semibold"
+          className="civ-btn civ-btn--location w-full justify-center border-2 border-dashed"
         >
-          <span className="text-lg">🏗️</span>
+          <span aria-hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M2 22h20" />
+              <path d="M7 22V10l5-4 5 4v12" />
+              <path d="M10 14h4" />
+            </svg>
+          </span>
           Build in 3D Editor
         </Link>
 
-        <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl space-y-3">
+        <div className="civ-glass rounded-2xl p-4 border border-sky-100/70 space-y-3">
           <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">1</span>
             Select Blueprint
           </h3>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-slate-500">
             Choose a building blueprint to place on the map.
           </p>
           <BlueprintPicker selected={selectedBlueprint} onSelect={handleBlueprintSelect} customBlueprints={customBlueprints} />
         </div>
 
-        <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl space-y-3">
+        <div className="civ-glass rounded-2xl p-4 border border-sky-100/70 space-y-3">
           <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">2</span>
             {selectedBlueprint ? 'Place Buildings on Map' : 'Select a blueprint first'}
           </h3>
-          <p className="text-[11px] text-slate-400">
+          <p className="text-[11px] text-slate-500">
             {selectedBlueprint
               ? 'Click highlighted zones to add buildings. You can place multiple.'
               : 'Choose a blueprint above, then click on highlighted parcels.'}
@@ -154,7 +166,7 @@ export default function GovernmentSidebar({
               {proposedLocations.map((b) => {
                 const degrees = Math.round((b.rotation ?? 0) * (180 / Math.PI));
                 return (
-                  <div key={b.id} className="rounded-lg bg-white/80 border border-sky-100 overflow-hidden p-2 space-y-2">
+                  <div key={b.id} className="rounded-lg bg-white/90 border border-sky-100 overflow-hidden p-2 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-[11px] font-medium text-slate-700 truncate">
                         {b.blueprint.name} ({b.blueprint.beds} beds)
@@ -223,7 +235,7 @@ export default function GovernmentSidebar({
               <button
                 type="button"
                 onClick={clearAll}
-                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 w-full py-1"
+                className="civ-btn civ-btn--ghost w-full justify-center py-2! text-xs!"
               >
                 Clear all
               </button>
@@ -231,7 +243,7 @@ export default function GovernmentSidebar({
           )}
         </div>
 
-        <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl">
+        <div className="civ-glass rounded-2xl p-4 border border-sky-100/70">
           <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider mb-3 flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">3</span>
             Run Simulation
@@ -239,9 +251,9 @@ export default function GovernmentSidebar({
           <button
             onClick={runSimulation}
             disabled={proposedLocations.length === 0 || loading}
-            className={`w-full py-3 rounded-lg text-sm font-bold uppercase tracking-wide transition-all ${proposedLocations.length > 0 && !loading
-              ? 'bg-sky-500 hover:bg-sky-600 text-white shadow-md'
-              : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+            className={`civ-btn w-full justify-center ${proposedLocations.length > 0 && !loading
+              ? 'civ-btn--primary'
+              : 'civ-btn--ghost civ-btn--disabled'
               }`}
           >
             {loading ? 'Running Simulation...' : 'Run Voronoi Simulation'}
