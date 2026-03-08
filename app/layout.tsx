@@ -16,7 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "ClearPath",
+  title: "ERoute",
   description: "Model ER placement, triage by severity, and route patients. For Ontario healthcare and civilians.",
 };
 

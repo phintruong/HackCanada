@@ -79,14 +79,14 @@ body {
 
   .lp-hero-title {
     position: absolute;
-    bottom: 2.5rem;
+    top: 2.5rem;
     left: 3rem;
     z-index: 3;
     font-family: var(--font-sans), "Plus Jakarta Sans", sans-serif;
     font-style: italic;
     font-weight: 400;
     font-size: clamp(3rem, 7vw, 5.5rem);
-    color: #0369a1;
+    color: #ffffff;
     letter-spacing: -0.02em;
     line-height: 1;
     text-shadow: 0 1px 20px rgba(255, 255, 255, 0.8);
@@ -467,7 +467,7 @@ body {
   }
 
   .lp-hero-title {
-    bottom: 2rem;
+    top: 2rem;
     left: 1.75rem;
   }
 
@@ -505,7 +505,7 @@ body {
 
   .lp-hero-title {
     font-size: 2.8rem;
-    bottom: 1.5rem;
+    top: 1.5rem;
     left: 1.25rem;
   }
 
