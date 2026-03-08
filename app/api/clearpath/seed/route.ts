@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/clearpath/mongoClient';
 import { mockHospitals, mockCongestion } from '@/lib/clearpath/mockData';
 
-export async function POST() {
+async function seed() {
   const db = await getDb();
 
   // Clear existing data
@@ -28,4 +28,12 @@ export async function POST() {
     hospitals: hospitalResult.insertedCount,
     congestion: congestionDocs.length,
   });
+}
+
+export async function POST() {
+  return seed();
+}
+
+export async function GET() {
+  return seed();
 }

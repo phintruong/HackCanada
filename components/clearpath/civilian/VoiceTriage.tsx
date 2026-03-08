@@ -31,20 +31,140 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
   const [started, setStarted] = useState(false);
   const [textInput, setTextInput] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const streamRef = useRef<MediaStream | null>(null);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animFrameRef = useRef<number | null>(null);
+  const hasSpokenRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  // Stable refs to break circular dependencies
+  const startListeningRef = useRef<() => void>(() => {});
+  const sendMessageRef = useRef<(text: string, msgs: Message[]) => void>(() => {});
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
+  // Stop silence detection loop
+  const stopSilenceDetection = useCallback(() => {
+    if (silenceTimerRef.current) {
+      clearTimeout(silenceTimerRef.current);
+      silenceTimerRef.current = null;
+    }
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+  }, []);
+
+  // Start silence detection — auto-sends after 2s of silence once user has spoken
+  const startSilenceDetection = useCallback((analyser: AnalyserNode, onSilence: () => void) => {
+    const bufferLength = analyser.fftSize;
+    const dataArray = new Uint8Array(bufferLength);
+    const SILENCE_THRESHOLD = 15;
+    const SILENCE_DURATION = 2000;
+
+    const check = () => {
+      analyser.getByteTimeDomainData(dataArray);
+
+      let sum = 0;
+      for (let i = 0; i < bufferLength; i++) {
+        const v = (dataArray[i] - 128) / 128;
+        sum += v * v;
+      }
+      const rms = Math.sqrt(sum / bufferLength) * 100;
+
+      if (rms > SILENCE_THRESHOLD) {
+        hasSpokenRef.current = true;
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+          silenceTimerRef.current = null;
+        }
+      } else if (hasSpokenRef.current && !silenceTimerRef.current) {
+        silenceTimerRef.current = setTimeout(onSilence, SILENCE_DURATION);
+      }
+
+      animFrameRef.current = requestAnimationFrame(check);
+    };
+
+    animFrameRef.current = requestAnimationFrame(check);
+  }, []);
+
+  // Transcribe recorded audio blob and send to conversation
+  const transcribeAndSend = useCallback(async (blob: Blob) => {
+    if (blob.size === 0) {
+      setIsThinking(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append('audio', blob, 'recording.webm');
+
+      const res = await fetch('/api/transcribe', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`Transcription failed: ${res.status}`);
+      }
+
+      const { text } = await res.json();
+      setIsThinking(false);
+
+      if (text && text.trim()) {
+        setMessages(prev => {
+          sendMessageRef.current(text.trim(), prev);
+          return prev;
+        });
+      } else {
+        setError("Didn't catch that. Try again or type your response.");
+      }
+    } catch (err) {
+      console.error('[VoiceTriage] ElevenLabs STT failed:', err);
+      setIsThinking(false);
+      setError('Transcription failed. Please try again or type your response.');
+    }
+  }, []);
+
+  // Stop recorder, transcribe, then conversation flow auto-restarts listening
+  const finishRecording = useCallback(async () => {
+    const mediaRecorder = mediaRecorderRef.current;
+    if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+
+    stopSilenceDetection();
+    setIsListening(false);
+    setIsThinking(true);
+    hasSpokenRef.current = false;
+
+    const audioBlob = await new Promise<Blob>((resolve) => {
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        audioChunksRef.current = [];
+        resolve(blob);
+      };
+      mediaRecorder.stop();
+    });
+
+    mediaRecorderRef.current = null;
+    await transcribeAndSend(audioBlob);
+  }, [stopSilenceDetection, transcribeAndSend]);
+
   // Speak text using ElevenLabs TTS via /api/speak
   const speakText = useCallback(async (text: string, onSpeechEnd?: () => void) => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.pause();
+    }
+    stopSilenceDetection();
+
     try {
       setIsSpeaking(true);
-      // Stop any browser TTS just in case
       window.speechSynthesis.cancel();
 
       const res = await fetch('/api/speak', {
@@ -70,7 +190,6 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
       };
       source.start();
     } catch (err) {
-      // Fallback to browser TTS
       console.error('[VoiceTriage] ElevenLabs TTS failed, using browser fallback:', err);
       setIsSpeaking(true);
       window.speechSynthesis.cancel();
@@ -86,7 +205,7 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
       };
       window.speechSynthesis.speak(utterance);
     }
-  }, []);
+  }, [stopSilenceDetection]);
 
   // Send message to conversation API
   const sendMessage = useCallback(async (userText: string, currentMessages: Message[]) => {
@@ -112,9 +231,8 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
       setMessages(updatedMessages);
       setIsThinking(false);
 
-      // Speak the response
+      // Speak the response, then auto-resume listening
       if (data.reply) {
-        // If this is the final triage message, delay routing until speech finishes
         if (data.triage) {
           speakText(data.reply, () => {
             setTimeout(() => {
@@ -122,7 +240,9 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
             }, 500);
           });
         } else {
-          speakText(data.reply);
+          speakText(data.reply, () => {
+            startListeningRef.current();
+          });
         }
       }
 
@@ -135,105 +255,63 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     }
   }, [speakText, onTriageComplete]);
 
+  // Start listening — acquire mic, record, and detect silence
+  const startListening = useCallback(async () => {
+    setError(null);
+    audioChunksRef.current = [];
+    hasSpokenRef.current = false;
+
+    try {
+      let stream = streamRef.current;
+      if (!stream || stream.getTracks().every(t => t.readyState === 'ended')) {
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        streamRef.current = stream;
+      }
+
+      const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          audioChunksRef.current.push(e.data);
+        }
+      };
+
+      const audioCtx = new AudioContext();
+      const source = audioCtx.createMediaStreamSource(stream);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(analyser);
+
+      mediaRecorder.start();
+      setIsListening(true);
+      startSilenceDetection(analyser, () => finishRecording());
+    } catch {
+      setError('Microphone access denied. Please allow mic permissions or type instead.');
+      setIsListening(false);
+    }
+  }, [startSilenceDetection, finishRecording]);
+
+  // Keep refs in sync
+  startListeningRef.current = startListening;
+  sendMessageRef.current = sendMessage;
+
+  // Manual stop — user taps to send immediately (interrupt)
+  const stopListening = useCallback(async () => {
+    await finishRecording();
+  }, [finishRecording]);
+
   // Start the conversation
   const startConversation = useCallback(async () => {
     setStarted(true);
     setError(null);
 
-    // Send an initial empty message to get the greeting
-    const greeting: Message = { role: 'assistant', content: "Hi there! I'm your ERoute intake assistant. I'm here to help figure out the best ER for your situation. Can you tell me what's going on today? What brought you here?" };
+    const greeting: Message = { role: 'assistant', content: "ERoute here. What's going on?" };
     setMessages([greeting]);
-    await speakText(greeting.content);
+    await speakText(greeting.content, () => {
+      startListeningRef.current();
+    });
   }, [speakText]);
-
-  // Start listening with the microphone (continuous — user decides when to stop)
-  const startListening = useCallback(() => {
-    setError(null);
-
-    const SpeechRecognitionAPI =
-      typeof window !== 'undefined'
-        ? window.SpeechRecognition || window.webkitSpeechRecognition
-        : null;
-
-    if (!SpeechRecognitionAPI) {
-      setError('Speech recognition is not supported in this browser. Please type your response instead.');
-      return;
-    }
-
-    const recognition = new SpeechRecognitionAPI();
-    recognition.lang = 'en-US';
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.maxAlternatives = 1;
-    recognitionRef.current = recognition;
-
-    let finalTranscript = '';
-    let lastFinalIndex = -1;
-
-    recognition.onstart = () => setIsListening(true);
-
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      // Only process new final results that haven't been added yet
-      for (let i = 0; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal && i > lastFinalIndex) {
-          finalTranscript += result[0].transcript + ' ';
-          lastFinalIndex = i;
-        }
-      }
-
-      // Collect interim results after the last final result
-      let interim = '';
-      for (let i = lastFinalIndex + 1; i < event.results.length; i++) {
-        if (!event.results[i].isFinal) {
-          interim += event.results[i][0].transcript;
-        }
-      }
-      // Store the accumulated transcript so stopListening can access it
-      (recognition as any).__transcript = (finalTranscript + interim).trim();
-    };
-
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      setIsListening(false);
-      recognitionRef.current = null;
-      if (event.error === 'not-allowed') {
-        setError('Microphone access denied. Please allow mic permissions or type instead.');
-      } else if (event.error !== 'aborted') {
-        setError("Didn't catch that. Try again or type your response.");
-      }
-    };
-
-    recognition.onend = () => {
-      // Only clean up state — actual sending happens in stopListening
-      setIsListening(false);
-      recognitionRef.current = null;
-    };
-
-    try {
-      recognition.start();
-    } catch {
-      setError('Failed to start listening.');
-      setIsListening(false);
-    }
-  }, []);
-
-  // Stop listening — gather transcript and send
-  const stopListening = useCallback(() => {
-    const recognition = recognitionRef.current;
-    if (!recognition) return;
-
-    const text = ((recognition as any).__transcript || '').trim();
-    recognition.stop();
-    recognitionRef.current = null;
-    setIsListening(false);
-
-    if (text) {
-      setMessages(prev => {
-        sendMessage(text, prev);
-        return prev;
-      });
-    }
-  }, [sendMessage]);
 
   // Send typed message
   const handleSendText = useCallback(() => {
@@ -241,23 +319,26 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     const text = textInput.trim();
     setTextInput('');
 
-    // Stop any ongoing speech
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
 
     setMessages(prev => {
-      sendMessage(text, prev);
+      sendMessageRef.current(text, prev);
       return prev;
     });
-  }, [textInput, sendMessage]);
+  }, [textInput]);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      recognitionRef.current?.abort();
+      stopSilenceDetection();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+      streamRef.current?.getTracks().forEach(t => t.stop());
       window.speechSynthesis.cancel();
     };
-  }, []);
+  }, [stopSilenceDetection]);
 
   // Initial "We're here to listen" screen
   if (!started) {
@@ -335,13 +416,13 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
 
       {/* Input area */}
       <div className="border-t border-slate-100 pt-3 space-y-2">
-        {/* Mic button — toggle start/stop, disabled while AI speaks or thinks */}
+        {/* Mic button — tap to send early (interrupt), or let silence auto-send */}
         <button
           onClick={isListening ? stopListening : startListening}
           disabled={isSpeaking || isThinking}
           className={`w-full py-3 rounded-2xl text-sm font-bold uppercase tracking-wide transition-all flex items-center justify-center gap-2 ${
             isListening
-              ? 'bg-red-500 text-white shadow-lg shadow-red-200'
+              ? 'bg-green-500 text-white shadow-lg shadow-green-200'
               : isSpeaking
                 ? 'bg-amber-100 text-amber-700 border border-amber-200 cursor-not-allowed'
                 : isThinking
@@ -355,7 +436,7 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-white" />
               </span>
-              Tap to Stop
+              Listening... Tap to Send
             </>
           ) : isSpeaking ? (
             <>

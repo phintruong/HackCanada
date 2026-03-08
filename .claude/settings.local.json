@@ -29,7 +29,8 @@
       "Bash(grep -r \"Presage\\\\|presage\" /Users/notjackl3/Desktop/CODING/HackCanada/*.md)",
       "WebFetch(domain:docs.physiology.presagetech.com)",
       "WebFetch(domain:physiology.presagetech.com)",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(find /Users/notjackl3/Desktop/CODING/HackCanada/lib/clearpath -type f -name \"*.ts\" -exec wc -l {} +)"
     ],
     "additionalDirectories": [
       "c:\\Users\\phine\\OneDrive\\Laptop\\HACKATHON\\qhacks\\qhacks\\public\\sounds",

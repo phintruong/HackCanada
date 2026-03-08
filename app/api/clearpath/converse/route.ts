@@ -3,32 +3,27 @@ import OpenAI from 'openai';
 
 export const maxDuration = 30;
 
-const SYSTEM_PROMPT = `You are ERoute's AI medical intake assistant for Canadian emergency rooms. You are NOT a doctor — you are conducting a quick pre-admission checklist to help route the patient to the right ER.
+const SYSTEM_PROMPT = `You are ERoute's emergency intake AI. You triage patients fast so we can route them to the right ER.
 
-Your job:
-1. Greet the patient warmly and ask what brought them in today.
-2. Ask focused follow-up questions ONE AT A TIME to understand their situation. Ask about:
-   - Main complaint / what happened
-   - Pain level (1-10) and location
-   - How long symptoms have been present
-   - Any difficulty breathing, chest pain, dizziness, or fever
-   - Any relevant medical history (allergies, medications, conditions)
-   - Whether the situation is getting worse, stable, or improving
-3. Do NOT assume anything. Always ask before concluding.
-4. Keep responses SHORT (1-3 sentences max). Be empathetic but efficient.
-5. After you have enough information (typically 4-6 exchanges), provide your assessment.
+Rules:
+1. Ask ONE short question at a time. Max 1-2 sentences per response.
+2. NO filler. No "I'm sorry to hear that", no "That sounds concerning", no "I understand". Jump straight to the next question or action.
+3. If something sounds dangerous, give ONE immediate instruction: "Apply pressure to the wound." / "Sit upright." / "Don't move." / "Call 911 now." Then continue gathering info.
+4. Gather: what happened, pain level (1-10), breathing, how long, getting worse?
+5. Wrap up in 3-4 exchanges max. Your FINAL message before triage must say exactly: "Got it. We're routing you to the nearest ER now."
 
-When you have enough information to make a triage decision, respond with a JSON block at the END of your message like this:
-\`\`\`json
-{"severity": "critical|urgent|non-urgent", "reasoning": "brief explanation", "done": true, "symptoms": {"chestPain": false, "shortnessOfBreath": false, "fever": false, "dizziness": false, "freeText": "summary of what patient described"}}
-\`\`\`
+CRITICAL RULES:
+- NEVER output JSON, code blocks, or structured data in your spoken text.
+- When you have enough info, add a line at the very end starting with "TRIAGE_RESULT:" followed by triage JSON:
+TRIAGE_RESULT:{"severity": "critical|urgent|non-urgent", "reasoning": "brief explanation", "done": true, "symptoms": {"chestPain": false, "shortnessOfBreath": false, "fever": false, "dizziness": false, "freeText": "summary"}}
+- The TRIAGE_RESULT line is stripped before display — the patient never sees it.
 
-Severity guide:
-- critical: Life-threatening (severe chest pain, stroke symptoms, major trauma, difficulty breathing at rest, uncontrolled bleeding)
-- urgent: Needs prompt care (moderate pain, high fever, worsening symptoms, possible fracture)
-- non-urgent: Can wait (mild symptoms, stable condition, minor injuries, cold/flu symptoms)
+Severity:
+- critical: Life-threatening (severe chest pain, stroke, major trauma, can't breathe, uncontrolled bleeding)
+- urgent: Needs prompt care (moderate-severe pain, high fever, worsening, possible fracture)
+- non-urgent: Can wait (mild stable pain, minor injury, cold/flu)
 
-IMPORTANT: Only include the JSON block when you are DONE with the conversation and have enough info. Otherwise just respond normally with your next question. Always be kind and reassuring.`;
+Be direct. Every word counts.`;
 
 interface Message {
   role: 'system' | 'user' | 'assistant';
@@ -66,12 +61,14 @@ export async function POST(req: NextRequest) {
 
     const text = result.choices[0]?.message?.content ?? '';
 
-    // Check if the assistant included a triage JSON block
+    // Extract triage JSON from the response — greedy match to handle nested braces
     let triage = null;
-    const jsonMatch = /```json\s*([\s\S]*?)```/.exec(text);
-    if (jsonMatch) {
+
+    // TRIAGE_RESULT: format — grab everything from the opening { to the end of the string
+    const triageMatch = /TRIAGE_RESULT:\s*(\{[\s\S]*\})\s*$/.exec(text);
+    if (triageMatch) {
       try {
-        const parsed = JSON.parse(jsonMatch[1].trim());
+        const parsed = JSON.parse(triageMatch[1].trim());
         if (parsed.done && parsed.severity && parsed.reasoning) {
           triage = {
             severity: parsed.severity,
@@ -84,8 +81,32 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Clean the display text (remove JSON block from what we show/speak)
-    const displayText = text.replace(/```json[\s\S]*?```/g, '').trim();
+    // Legacy ```json format fallback
+    if (!triage) {
+      const jsonMatch = /```json\s*([\s\S]*?)```/.exec(text);
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[1].trim());
+          if (parsed.done && parsed.severity && parsed.reasoning) {
+            triage = {
+              severity: parsed.severity,
+              reasoning: parsed.reasoning,
+              symptoms: parsed.symptoms || null,
+            };
+          }
+        } catch {
+          // Not valid JSON, ignore
+        }
+      }
+    }
+
+    // Clean the display text — strip all machine-readable data so only natural speech remains
+    let displayText = text
+      .replace(/TRIAGE_RESULT:\s*\{[\s\S]*\}\s*$/g, '')     // TRIAGE_RESULT line (greedy)
+      .replace(/```json[\s\S]*?```/g, '')                     // ```json blocks
+      .replace(/\{[^}]*"severity"\s*:[\s\S]*\}/g, '')         // any raw JSON with "severity"
+      .replace(/\{[^}]*"done"\s*:\s*true[\s\S]*\}/g, '')      // any raw JSON with "done": true
+      .trim();
 
     return NextResponse.json({
       reply: displayText,
