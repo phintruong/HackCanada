@@ -40,28 +40,51 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
-  // Speak text using browser Web Speech API (free, no API key needed)
-  const speakText = useCallback(async (text: string) => {
+  // Speak text using ElevenLabs TTS via /api/speak
+  const speakText = useCallback(async (text: string, onSpeechEnd?: () => void) => {
     try {
       setIsSpeaking(true);
-      // Cancel any ongoing speech
+      // Stop any browser TTS just in case
       window.speechSynthesis.cancel();
 
+      const res = await fetch('/api/speak', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text }),
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => res.status.toString());
+        throw new Error(`ElevenLabs ${res.status}: ${errText}`);
+      }
+
+      const arrayBuffer = await res.arrayBuffer();
+      const audioCtx = new AudioContext();
+      const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+      source.onended = () => {
+        setIsSpeaking(false);
+        onSpeechEnd?.();
+      };
+      source.start();
+    } catch (err) {
+      // Fallback to browser TTS
+      console.error('[VoiceTriage] ElevenLabs TTS failed, using browser fallback:', err);
+      setIsSpeaking(true);
+      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.rate = 1.05;
-      utterance.pitch = 1.0;
-
       utterance.onend = () => {
         setIsSpeaking(false);
+        onSpeechEnd?.();
       };
-
       utterance.onerror = () => {
         setIsSpeaking(false);
+        onSpeechEnd?.();
       };
-
       window.speechSynthesis.speak(utterance);
-    } catch {
-      setIsSpeaking(false);
     }
   }, []);
 
@@ -91,15 +114,16 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
 
       // Speak the response
       if (data.reply) {
-        await speakText(data.reply);
-      }
-
-      // If triage is complete, notify parent
-      if (data.triage) {
-        // Small delay so user hears the final message
-        setTimeout(() => {
-          onTriageComplete(data.triage);
-        }, 2000);
+        // If this is the final triage message, delay routing until speech finishes
+        if (data.triage) {
+          speakText(data.reply, () => {
+            setTimeout(() => {
+              onTriageComplete(data.triage);
+            }, 500);
+          });
+        } else {
+          speakText(data.reply);
+        }
       }
 
       return updatedMessages;
@@ -144,17 +168,25 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     recognitionRef.current = recognition;
 
     let finalTranscript = '';
+    let lastFinalIndex = -1;
 
     recognition.onstart = () => setIsListening(true);
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let interim = '';
+      // Only process new final results that haven't been added yet
       for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
-        if (result.isFinal) {
+        if (result.isFinal && i > lastFinalIndex) {
           finalTranscript += result[0].transcript + ' ';
-        } else {
-          interim += result[0].transcript;
+          lastFinalIndex = i;
+        }
+      }
+
+      // Collect interim results after the last final result
+      let interim = '';
+      for (let i = lastFinalIndex + 1; i < event.results.length; i++) {
+        if (!event.results[i].isFinal) {
+          interim += event.results[i][0].transcript;
         }
       }
       // Store the accumulated transcript so stopListening can access it
@@ -209,12 +241,9 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     const text = textInput.trim();
     setTextInput('');
 
-    // Stop audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setIsSpeaking(false);
-    }
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
 
     setMessages(prev => {
       sendMessage(text, prev);
@@ -226,7 +255,7 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort();
-      audioRef.current?.pause();
+      window.speechSynthesis.cancel();
     };
   }, []);
 
