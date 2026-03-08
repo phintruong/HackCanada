@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import SimulationResultPanel from './SimulationResultPanel';
 import BlueprintPicker from './BlueprintPicker';
 import type { Blueprint, ProposedBuilding } from '@/lib/clearpath/blueprints';
@@ -109,6 +110,14 @@ export default function GovernmentSidebar({
       </div>
 
       <div className="space-y-4">
+        <Link
+          href="/editor"
+          className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border-2 border-dashed border-slate-300 text-slate-600 hover:border-sky-400 hover:text-sky-600 hover:bg-sky-50/50 transition-all text-sm font-semibold"
+        >
+          <span className="text-lg">🏗️</span>
+          Build in 3D Editor
+        </Link>
+
         <div className="p-4 bg-sky-50/60 border border-sky-200/70 rounded-2xl space-y-3">
           <h3 className="text-[11px] font-bold text-sky-700 uppercase tracking-wider flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-sky-500 flex items-center justify-center text-[10px] font-black text-white">1</span>

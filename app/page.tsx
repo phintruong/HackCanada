@@ -49,16 +49,16 @@ export default function Landing() {
       <div className="fixed top-0 left-0 right-0 z-[100] flex justify-center pt-5">
         <div className="inline-flex gap-1.5 rounded-full border border-sky-200/80 bg-white/95 p-2 shadow-lg backdrop-blur-sm">
           <Link
-            href="/map"
-            className="min-w-[7.5rem] text-center justify-center px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-sky-700 bg-white hover:bg-sky-50 border border-sky-200 rounded-full shadow-md hover:shadow-lg transition-all"
+            href="/map?mode=government"
+            className="min-w-[7.5rem] text-center justify-center px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-full shadow-md hover:shadow-lg transition-all"
           >
-            Explore
+            Government
           </Link>
           <Link
-            href="/editor"
+            href="/map?mode=civilian"
             className="min-w-[7.5rem] text-center justify-center px-5 py-2.5 text-sm font-semibold uppercase tracking-wider text-white bg-sky-500 hover:bg-sky-600 rounded-full shadow-md hover:shadow-lg transition-all"
           >
-            Build
+            Civilian
           </Link>
         </div>
       </div>

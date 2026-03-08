@@ -15,7 +15,8 @@ import type { ProposedBuilding } from '@/lib/clearpath/blueprints';
 
 export default function MapPage() {
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<'government' | 'civilian'>('civilian');
+  const initialMode = searchParams.get('mode') === 'government' ? 'government' : searchParams.get('mode') === 'civilian' ? 'civilian' : 'civilian';
+  const [mode, setMode] = useState<'government' | 'civilian'>(initialMode);
   const [selectedCity, setSelectedCity] = useState(() => CITIES[0]);
   const [simulationResult, setSimulationResult] = useState(null);
   const [recommendedHospital, setRecommendedHospital] = useState<any>(null);
@@ -160,7 +161,9 @@ export default function MapPage() {
           <span aria-hidden>←</span>
           Back
         </Link>
-        <ModeToggle mode={mode} onChange={handleModeChange} />
+        {!searchParams.get('mode') && (
+          <ModeToggle mode={mode} onChange={handleModeChange} />
+        )}
         <CitySelector
           cities={CITIES}
           currentCityId={selectedCity.id}
