@@ -37,7 +37,7 @@ const showcaseFeatures = [
   {
     label: 'Live Congestion',
     title: 'Real-time ER occupancy',
-    description: 'Color-coded circles on every hospital show live congestion — green means capacity, red means overwhelmed.',
+    description: 'Colored circles on every hospital show live congestion. Green means capacity, red means overwhelmed.',
   },
   {
     label: 'Smart Routing',
@@ -47,7 +47,7 @@ const showcaseFeatures = [
   {
     label: 'ER Simulation',
     title: 'Plan new ER placement',
-    description: 'Drop a proposed ER, set capacity, run a Voronoi simulation — watch patient flow redistribute across the network.',
+    description: 'Drop a proposed ER, set capacity, run a Voronoi simulatio. Watch patient flow redistribute across the network.',
   },
 ];
 
