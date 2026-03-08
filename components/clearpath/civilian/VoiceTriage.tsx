@@ -32,8 +32,11 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
   const [textInput, setTextInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const silenceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const SILENCE_MS = 1200;
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -41,28 +44,31 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
   }, [messages, isThinking]);
 
   // Speak text using browser Web Speech API (free, no API key needed)
-  const speakText = useCallback(async (text: string) => {
-    try {
-      setIsSpeaking(true);
-      // Cancel any ongoing speech
-      window.speechSynthesis.cancel();
+  // Returns a Promise that resolves when playback ends (for auto-starting mic after greeting).
+  const speakText = useCallback((text: string): Promise<void> => {
+    return new Promise((resolve) => {
+      try {
+        setIsSpeaking(true);
+        window.speechSynthesis.cancel();
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.05;
-      utterance.pitch = 1.0;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
 
-      utterance.onend = () => {
+        const done = () => {
+          setIsSpeaking(false);
+          resolve();
+        };
+
+        utterance.onend = done;
+        utterance.onerror = done;
+
+        window.speechSynthesis.speak(utterance);
+      } catch {
         setIsSpeaking(false);
-      };
-
-      utterance.onerror = () => {
-        setIsSpeaking(false);
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch {
-      setIsSpeaking(false);
-    }
+        resolve();
+      }
+    });
   }, []);
 
   // Send message to conversation API
@@ -116,11 +122,12 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     setStarted(true);
     setError(null);
 
-    // Send an initial empty message to get the greeting
     const greeting: Message = { role: 'assistant', content: "Hi there! I'm your ERoute intake assistant. I'm here to help figure out the best ER for your situation. Can you tell me what's going on today? What brought you here?" };
     setMessages([greeting]);
     await speakText(greeting.content);
-  }, [speakText]);
+    // Auto-start listening so user can speak without tapping
+    setTimeout(() => startListening(), 300);
+  }, [speakText, startListening]);
 
   // Start listening with the microphone (continuous — user decides when to stop)
   const startListening = useCallback(() => {
@@ -157,8 +164,17 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
           interim += result[0].transcript;
         }
       }
-      // Store the accumulated transcript so stopListening can access it
-      (recognition as any).__transcript = (finalTranscript + interim).trim();
+      const currentTranscript = (finalTranscript + interim).trim();
+      (recognition as any).__transcript = currentTranscript;
+
+      // Stop on silence: after user has said something, stop listening after SILENCE_MS with no new speech
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
+      if (currentTranscript.length > 0) {
+        silenceTimeoutRef.current = setTimeout(() => {
+          silenceTimeoutRef.current = null;
+          stopListening();
+        }, SILENCE_MS);
+      }
     };
 
     recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -172,7 +188,10 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     };
 
     recognition.onend = () => {
-      // Only clean up state — actual sending happens in stopListening
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+        silenceTimeoutRef.current = null;
+      }
       setIsListening(false);
       recognitionRef.current = null;
     };
@@ -183,10 +202,14 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
       setError('Failed to start listening.');
       setIsListening(false);
     }
-  }, []);
+  }, [stopListening]);
 
   // Stop listening — gather transcript and send
   const stopListening = useCallback(() => {
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
     const recognition = recognitionRef.current;
     if (!recognition) return;
 
@@ -209,13 +232,6 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
     const text = textInput.trim();
     setTextInput('');
 
-    // Stop audio
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-      setIsSpeaking(false);
-    }
-
     setMessages(prev => {
       sendMessage(text, prev);
       return prev;
@@ -226,7 +242,7 @@ export default function VoiceTriage({ onTriageComplete }: VoiceTriageProps) {
   useEffect(() => {
     return () => {
       recognitionRef.current?.abort();
-      audioRef.current?.pause();
+      if (silenceTimeoutRef.current) clearTimeout(silenceTimeoutRef.current);
     };
   }, []);
 
