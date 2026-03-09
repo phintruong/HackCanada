@@ -1,0 +1,23 @@
+{
+  "id": "bld_mmhxn3we_qitw83t",
+  "name": "ss",
+  "beds": 0,
+  "metadata": {
+    "totalBeds": 26,
+    "erBeds": 0,
+    "operatingRooms": 0,
+    "traumaRooms": 0,
+    "ambulances": 0,
+    "rooms": 19,
+    "doctors": 7,
+    "nurses": 14,
+    "usableInpatientBeds": 26,
+    "usableERBays": 0,
+    "usableORs": 0,
+    "totalFloorArea": 1200,
+    "groundFloorArea": 300,
+    "numberOfFloors": 4,
+    "createdAt": "2026-03-08T15:54:11.940Z"
+  },
+  "createdAt": "2026-03-08T15:54:11.967Z"
+}

@@ -183,7 +183,7 @@ export default function MapPageContent() {
         mapStyle={mapStyle}
       />
       <div className='cp-map-rail'>
-        <div className="flex items-center justify-between gap-2 w-full">
+        <div className="flex items-center justify-start gap-3 w-full">
           <Link
             href="/"
             className="cp-back-btn"

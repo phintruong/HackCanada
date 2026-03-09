@@ -1,0 +1,23 @@
+{
+  "id": "bld_mmii1r52_m19whpw",
+  "name": "test",
+  "beds": 0,
+  "metadata": {
+    "totalBeds": 103,
+    "erBeds": 0,
+    "operatingRooms": 1,
+    "traumaRooms": 0,
+    "ambulances": 0,
+    "rooms": 37,
+    "doctors": 17,
+    "nurses": 55,
+    "usableInpatientBeds": 103,
+    "usableERBays": 0,
+    "usableORs": 1,
+    "totalFloorArea": 2900,
+    "groundFloorArea": 580,
+    "numberOfFloors": 5,
+    "createdAt": "2026-03-09T01:25:27.563Z"
+  },
+  "createdAt": "2026-03-09T01:25:27.593Z"
+}
